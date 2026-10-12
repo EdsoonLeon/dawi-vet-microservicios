@@ -26,3 +26,8 @@ application-local.yml
 # Sistema
 Thumbs.db
 .DS_Store
+
+# Workspace de Spring Tools / Eclipse
+.metadata/
+RemoteSystemsTempFiles/
+*.zip
