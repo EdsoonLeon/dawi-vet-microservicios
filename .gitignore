@@ -1,0 +1,28 @@
+# Maven
+target/
+
+# Spring Tools / Eclipse
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# Otros IDEs
+.idea/
+.vscode/
+*.iml
+
+# Angular
+node_modules/
+dist/
+.angular/
+
+# Credenciales y entorno
+.env
+application-local.yml
+
+# Sistema
+Thumbs.db
+.DS_Store
