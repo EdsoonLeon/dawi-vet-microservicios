@@ -12,4 +12,5 @@ Migración del sistema de veterinaria a microservicios con Spring Boot.
 | veterinarios-service | 8083 |
 | citas-service | 8084 |
 | consultas-service | 8085 |
+| mascotas-service | 8086 |
 | frontend-angular | 4200 |
