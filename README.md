@@ -1,16 +1,207 @@
 # DAWI-VET Microservicios
 
-Migración del sistema de veterinaria a microservicios con Spring Boot.
+Migre mi sistema de veterinaria (antes un monolito con Spring Boot) a una arquitectura de microservicios con Java 17, Spring Boot 4.1.1 y Spring Cloud 2025.1.3.
 
-## Servicios y puertos
-| Servicio | Puerto |
+Todas las peticiones entran por el **API Gateway (puerto 8080)**, que consulta a **Eureka** dónde está cada servicio. La seguridad usa **JWT**: `auth-service` genera el token y cada servicio lo valida con la misma clave.
+
+## Servicios
+
+| Servicio | Puerto | Base de datos | Función |
+|---|---|---|---|
+| eureka-server | 8761 | - | Registro de servicios |
+| api-gateway | 8080 | - | Puerta de entrada y CORS |
+| auth-service | 8081 | auth_db | Usuarios, roles, login y JWT |
+| clientes-service | 8082 | clientes_db | Clientes |
+| veterinarios-service | 8083 | veterinarios_db | Veterinarios (llama a auth-service) |
+| citas-service | 8084 | citas_db | Citas (llama a mascotas y veterinarios) |
+| consultas-service | 8085 | consultas_db | Consultas (llama a mascotas y veterinarios) |
+| mascotas-service | 8086 | mascotas_db | Mascotas (llama a clientes) |
+
+Próximamente: `vacunas-service` (8087) e `inventario-service` (8088).
+
+## Requisitos
+
+- JDK 17
+- MySQL en el puerto 3306, usuario `root` sin clave (si tienes clave, cámbiala en `spring.datasource.password` de cada servicio)
+- Git y Postman
+- Spring Tools (opcional, también se ejecuta por terminal)
+
+## 1. Clonar el proyecto
+
+```bash
+git clone https://github.com/EdsoonLeon/dawi-vet-microservicios.git
+cd dawi-vet-microservicios
+```
+
+## 2. Ejecutar el backend
+
+Los servicios se levantan **uno por uno, en este orden**. Espera a que cada uno termine de arrancar (mensaje `Started ... in x seconds`) antes de iniciar el siguiente. En Spring Tools: clic derecho en el proyecto → **Run As → Spring Boot App**. La primera vez Maven descarga las dependencias y tarda unos minutos.
+
+```
+MySQL encendido (puerto 3306)
+        │
+        ▼
+1. eureka-server (8761)
+        │   abrir http://localhost:8761 y ver que carga
+        ▼
+2. api-gateway (8080)
+        │
+        ▼
+3. auth-service (8081)
+        │
+        ▼
+4. clientes-service (8082)
+        │
+        ▼
+5. veterinarios-service (8083)
+        │   necesita auth-service encendido
+        ▼
+6. mascotas-service (8086)
+        │   necesita clientes-service encendido
+        ▼
+7. citas-service (8084)
+        │   necesita mascotas y veterinarios encendidos
+        ▼
+8. consultas-service (8085)
+        │   necesita mascotas y veterinarios encendidos
+        ▼
+Abrir http://localhost:8761 y verificar que los 7 servicios
+aparezcan registrados (tarda unos 30 segundos)
+```
+
+Las bases de datos se crean solas al arrancar cada servicio.
+
+## 3. Datos iniciales
+
+Crear los roles en MySQL:
+
+```sql
+USE auth_db;
+INSERT INTO roles (nombre) VALUES ('ADMIN'), ('RECEPCIONISTA'), ('VETERINARIO');
+```
+
+Registrar el primer usuario administrador con `POST http://localhost:8080/api/auth/registrar`:
+
+```json
+{ "nombre": "Admin", "apellido": "Vet", "correo": "admin@vet.com", "clave": "123456", "rol": { "id": 1 } }
+```
+
+Iniciar sesión con `POST http://localhost:8080/api/auth/login`:
+
+```json
+{ "correo": "admin@vet.com", "clave": "123456" }
+```
+
+La respuesta trae el `token`. En Postman, para todas las demás peticiones: pestaña **Authorization** → **Bearer Token** → pegar el token (sin comillas). El token dura 24 horas.
+
+## 4. Guía de las APIs
+
+Todas se prueban por el gateway (`http://localhost:8080`) y exigen el Bearer Token, excepto `/api/auth/**` y `GET /api/roles`.
+
+### Auth (`/api/auth`, `/api/usuarios`, `/api/roles`)
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/auth/registrar` | `{ "nombre", "apellido", "correo", "clave", "rol": { "id": 1 } }` |
+| POST | `/api/auth/login` | `{ "correo", "clave" }` |
+| GET | `/api/roles` | - |
+| GET | `/api/usuarios` | - |
+| GET | `/api/usuarios/{id}` | - |
+| PUT | `/api/usuarios/{id}` | `{ "nombre", "apellido", "correo", "rol": { "id": 1 } }` |
+| PATCH | `/api/usuarios/{id}/activar` | - |
+| DELETE | `/api/usuarios/{id}` | - |
+
+### Clientes (`/api/clientes`)
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/clientes/registrar` | `{ "nombre": "Juan", "apellido": "Perez", "telefono": "999888777", "direccion": "Av. Lima 123", "correo": "juan@mail.com" }` |
+| GET | `/api/clientes` | - |
+| GET | `/api/clientes/{id}` | - |
+| PUT | `/api/clientes/{id}` | mismos campos del registro |
+| PATCH | `/api/clientes/{id}/activar` | - |
+| DELETE | `/api/clientes/{id}` | - (eliminación lógica) |
+
+### Veterinarios (`/api/veterinarios`)
+
+Requiere `auth-service` encendido, porque al registrar crea el usuario con rol VETERINARIO.
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/veterinarios/registrar` | `{ "especialidad": "Cirugia", "colegiatura": "CMVP-1234", "edad": 35, "usuario": { "nombre": "Ana", "apellido": "Lopez", "correo": "ana@vet.com", "clave": "123456" } }` |
+| GET | `/api/veterinarios` | - |
+| GET | `/api/veterinarios/{id}` | - |
+| PUT | `/api/veterinarios/{id}` | `{ "especialidad", "colegiatura", "edad" }` |
+| PATCH | `/api/veterinarios/{id}/activar` | - |
+| DELETE | `/api/veterinarios/{id}` | - |
+
+### Mascotas (`/api/mascotas`)
+
+Requiere `clientes-service` encendido, porque valida que el cliente exista.
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/mascotas/registrar` | `{ "nombre": "Firulais", "especie": "Perro", "raza": "Labrador", "edad": 3, "clienteId": 1 }` |
+| GET | `/api/mascotas` | - |
+| GET | `/api/mascotas/cliente/{clienteId}` | - |
+| GET | `/api/mascotas/{id}` | - |
+| PUT | `/api/mascotas/{id}` | `{ "nombre", "especie", "raza", "edad" }` |
+| PATCH | `/api/mascotas/{id}/activar` | - |
+| DELETE | `/api/mascotas/{id}` | - |
+
+### Citas (`/api/citas`)
+
+Requiere `mascotas-service` y `veterinarios-service` encendidos.
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/citas/registrar` | `{ "fecha": "2026-10-20", "hora": "10:30:00", "mascotaId": 1, "veterinarioId": 1 }` |
+| GET | `/api/citas` | - |
+| GET | `/api/citas/mascota/{mascotaId}` | - |
+| GET | `/api/citas/veterinario/{veterinarioId}` | - |
+| GET | `/api/citas/{id}` | - |
+| PUT | `/api/citas/{id}` | `{ "fecha", "hora" }` |
+| PATCH | `/api/citas/{id}/estado` | `{ "estado": "ATENDIDA" }` |
+| DELETE | `/api/citas/{id}` | - (deja la cita en CANCELADA) |
+
+### Consultas (`/api/consultas`)
+
+Requiere `mascotas-service` y `veterinarios-service` encendidos.
+
+| Método | Ruta | Body |
+|---|---|---|
+| POST | `/api/consultas/registrar` | `{ "fecha": "2026-10-20", "diagnostico": "Gastritis", "tratamiento": "Dieta blanda", "observacion": "Control en 7 dias", "mascotaId": 1, "veterinarioId": 1 }` |
+| GET | `/api/consultas` | - |
+| GET | `/api/consultas/mascota/{mascotaId}` | - |
+| GET | `/api/consultas/veterinario/{veterinarioId}` | - |
+| GET | `/api/consultas/{id}` | - |
+| PUT | `/api/consultas/{id}` | `{ "fecha", "diagnostico", "tratamiento", "observacion" }` |
+| DELETE | `/api/consultas/{id}` | - (eliminación física) |
+
+### Orden sugerido para probar todo
+
+1. Login (token)
+2. Registrar cliente → registrar mascota (con el `clienteId`)
+3. Registrar veterinario
+4. Registrar cita y consulta (con `mascotaId` y `veterinarioId`)
+
+## Problemas comunes
+
+| Síntoma | Causa y solución |
 |---|---|
-| eureka-server | 8761 |         ✔
-| api-gateway | 8080 |           ✔
-| auth-service | 8081 |          ✔
-| clientes-service | 8082 |      ✔
-| veterinarios-service | 8083 |  ✔
-| citas-service | 8084 |        
-| consultas-service | 8085 |
-| mascotas-service | 8086 |
-| frontend-angular | 4200 |
+| `403` | Falta el Bearer Token en Postman |
+| `401` "Token jwt inválido o expirado" | El token venció, o la `jwt.secret` no es igual en todos los servicios |
+| `503` desde el gateway | El servicio aún no se registró en Eureka (esperar) o no está encendido |
+| Un servicio arranca en el puerto 8080 o falla con `jwt.secret` | No está leyendo su `application.properties`: revisar que no tenga tildes ni ñ (ni en comentarios) y limpiar `target` |
+| `git push` rechazado | Hacer `git pull --rebase` y volver a `git push` |
+
+## Trabajo con Git
+
+```bash
+git pull --rebase                 # antes de empezar cada día
+git status                        # no debe aparecer target/
+git add .
+git commit -m "mensaje"
+git push
+```
+
