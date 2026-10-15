@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {  
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  /* Colores */
+  --color-surface: #f8f9ff;
+  --color-surface-dim: #d0dbed;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e6eeff;
+  --color-surface-container-high: #dee9fc;
+  --color-on-surface: #121c2a;
+  --color-on-surface-variant: #3c4a46;
+  --color-outline: #6c7a76;
+  --color-outline-variant: #bbcac5;
+  --color-primary: #006b5d;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #56e8d0;
+  --color-on-primary-container: #006659;
+  --color-secondary: #674bb5;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ab8ffe;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-background: #f8f9ff;
+  --color-on-background: #121c2a;
+
+  /* Radios */
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Espaciado */
+  --spacing-xs: 4px;
+  --spacing-sm: 12px;
+  --spacing-md: 24px;
+  --spacing-lg: 40px;
+  --spacing-xl: 64px;
+
+  /* Tipografía */
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--font-weight: 700;
+  --text-headline-lg--letter-spacing: -0.02em;
+
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 28px;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 500;
+
+  --text-label-md: 14px;
+  --text-label-md--line-height: 16px;
+  --text-label-md--font-weight: 600;
+  --text-label-md--letter-spacing: 0.01em;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+}
+
+body {
+  font-family: var(--font-sans);
+  margin: 0;
+}

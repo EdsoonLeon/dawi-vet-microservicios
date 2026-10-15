@@ -1,0 +1,16 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Rol } from '../models/rol';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class RolService {
+  private http = inject(HttpClient);
+  private readonly urlBase = 'http://localhost:8081/api/roles';
+
+  listarRoles(): Observable<Rol[]> {
+    return this.http.get<Rol[]>(this.urlBase);
+  }
+}

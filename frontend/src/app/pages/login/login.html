@@ -1,0 +1,100 @@
+<main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-container-low to-primary-container/20 p-4">
+  <div class="flex flex-col lg:flex-row w-full max-w-5xl min-h-[600px] rounded-xl overflow-hidden shadow-2xl bg-surface-container-lowest">
+
+    <!-- Columna izquierda: formulario -->
+    <div class="flex flex-col flex-1 p-8 lg:p-16 justify-center relative z-10">
+      <div class="w-full max-w-[24rem] mx-auto flex flex-col space-y-6">
+
+        <!-- Logo y marca -->
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="w-12 h-12 rounded-md bg-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-primary">pets</span>
+          </div>
+          <span class="text-headline-sm text-on-surface">Veterinaria</span>
+        </div>
+
+        <!-- Encabezado -->
+        <div class="space-y-2 w-full">
+          <h1 class="text-headline-lg text-on-surface tracking-tight">Bienvenido</h1>
+          <p class="text-body-md text-on-surface-variant">Ingresa tus credenciales para continuar</p>
+        </div>
+
+        <!-- Formulario -->
+        <form class="w-full space-y-5 mt-4" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+          <!-- Correo -->
+          <div class="space-y-1.5">
+            <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block" for="correo">
+              Correo Electrónico
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-4 text-on-surface-variant pointer-events-none">mail</span>
+              <input
+                id="correo"
+                type="email"
+                formControlName="correo"
+                placeholder="ejemplo@veterinaria.com"
+                class="w-full h-12 pl-12 pr-4 bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+              />
+            </div>
+            @if (loginForm.get('correo')?.invalid && loginForm.get('correo')?.touched) {
+              <p class="text-label-sm text-error">Ingresa un correo válido.</p>
+            }
+          </div>
+
+          <!-- Contraseña -->
+          <div class="space-y-1.5">
+            <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block" for="clave">
+              Contraseña
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-4 text-on-surface-variant pointer-events-none">lock</span>
+              <input
+                id="clave"
+                type="password"
+                formControlName="clave"
+                placeholder="••••••••"
+                class="w-full h-12 pl-12 pr-4 bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+              />
+            </div>
+            @if (loginForm.get('clave')?.invalid && loginForm.get('clave')?.touched) {
+              <p class="text-label-sm text-error">La contraseña es obligatoria.</p>
+            }
+          </div>
+            <!-- Error del backend (credenciales incorrectas, usuario no encontrado, etc.) -->
+          @if (mensajeError) {
+            <p class="text-label-sm text-error text-center">{{ mensajeError }}</p>
+          }
+          <!-- Botón -->
+          <button
+            type="submit"
+            class="w-full h-14 bg-primary text-on-primary text-label-md rounded-lg shadow-lg hover:bg-primary/90 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 mt-4"
+          >
+            <span>Iniciar Sesión</span>
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Columna derecha: showcase glassmorphism -->
+    <div class="hidden lg:flex flex-1 relative overflow-hidden items-center justify-center p-12">
+      <div class="absolute inset-0 bg-gradient-to-br from-primary-container via-surface-container-low to-secondary-container opacity-80 mix-blend-multiply"></div>
+      <div class="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-primary/30 rounded-full mix-blend-screen filter blur-[80px]"></div>
+      <div class="absolute -bottom-[20%] -left-[10%] w-[500px] h-[500px] bg-secondary/30 rounded-full mix-blend-screen filter blur-[80px]"></div>
+
+      <div class="relative z-10 max-w-[32rem] w-full bg-white/10 backdrop-blur-3xl rounded-xl p-10 shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/40">
+        <div class="flex flex-col items-center text-center space-y-6 relative z-20">
+          <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center shadow-lg border border-white/50">
+            <span class="material-symbols-outlined text-4xl text-on-surface">favorite</span>
+          </div>
+          <h2 class="text-headline-lg text-on-surface">Sistema de Gestión Veterinaria</h2>
+          <p class="text-body-lg text-on-surface/90 leading-relaxed max-w-[24rem]">
+            Administra pacientes, citas e historiales médicos de forma eficiente y segura, todo en un solo lugar.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>

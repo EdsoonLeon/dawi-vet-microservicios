@@ -1,0 +1,21 @@
+@if (visible()) {
+  <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" (click)="onCancelar()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-lg max-w-[24rem] w-full space-y-md" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-sm">
+        <div class="w-10 h-10 rounded-full bg-error/15 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-error">warning</span>
+        </div>
+        <h2 class="text-headline-sm text-on-surface">{{ titulo() }}</h2>
+      </div>
+      <p class="text-body-md text-on-surface-variant">{{ mensaje() }}</p>
+      <div class="flex gap-sm justify-end pt-sm">
+        <button (click)="onCancelar()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
+          Cancelar
+        </button>
+        <button (click)="onConfirmar()" class="bg-error text-on-error px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
+          {{ textoConfirmar() }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

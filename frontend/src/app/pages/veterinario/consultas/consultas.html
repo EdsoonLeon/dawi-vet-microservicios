@@ -1,0 +1,123 @@
+<div class="space-y-lg">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-headline-lg text-on-surface">Consultas</h1>
+      <p class="text-body-sm text-on-surface-variant">Registra el resultado de tus atenciones</p>
+    </div>
+    <button (click)="abrirNuevo()" class="bg-primary text-on-primary text-label-md px-md py-sm rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-xs">
+      <span class="material-symbols-outlined text-lg">add</span>
+      Nueva consulta
+    </button>
+  </div>
+
+  <div class="relative">
+    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+    <input
+      [ngModel]="terminoBusqueda()"
+      (ngModelChange)="terminoBusqueda.set($event)"
+      type="text"
+      placeholder="Buscar por mascota, diagnóstico o tratamiento..."
+      class="w-full h-11 pl-12 pr-4 bg-surface rounded-full text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+    />
+  </div>
+
+  @if (mensajeError()) {
+    <p class="text-label-sm text-error">{{ mensajeError() }}</p>
+  }
+
+  @if (mostrarFormulario) {
+    <div class="bg-surface-container-lowest rounded-2xl p-lg shadow-sm space-y-md">
+      <h2 class="text-headline-sm text-on-surface">{{ consultaEditandoId ? 'Editar consulta' : 'Nueva consulta' }}</h2>
+
+      <form [formGroup]="consultaForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Fecha</label>
+          <input formControlName="fecha" type="date" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Mascota</label>
+          <select formControlName="mascotaId" [disabled]="!!consultaEditandoId"
+                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+            <option value="" disabled>Selecciona una mascota</option>
+            @for (mascota of mascotasActivas(); track mascota.id) {
+              <option [value]="mascota.id">{{ mascota.nombre }} ({{ mascota.cliente.nombre }} {{ mascota.cliente.apellido }})</option>
+            }
+          </select>
+          @if (consultaEditandoId) {
+            <p class="text-label-sm text-on-surface-variant">La mascota no se puede cambiar al editar.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Diagnóstico</label>
+          <textarea formControlName="diagnostico" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Tratamiento</label>
+          <textarea formControlName="tratamiento" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Observación</label>
+          <textarea formControlName="observacion" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+
+        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
+          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+    <table class="w-full text-left">
+      <thead>
+        <tr class="border-b border-outline-variant/30">
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Fecha</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Mascota</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Diagnóstico</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Tratamiento</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (consulta of consultasFiltradas(); track consulta.id) {
+          <tr class="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
+            <td class="px-md py-sm text-body-sm text-on-surface">{{ consulta.fecha }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.mascota.nombre }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.diagnostico }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.tratamiento }}</td>
+            <td class="px-md py-sm text-right space-x-xs">
+              <button (click)="abrirEditar(consulta)" class="p-xs text-on-surface-variant hover:text-primary transition-colors" title="Editar">
+                <span class="material-symbols-outlined text-lg">edit</span>
+              </button>
+              <button (click)="pedirEliminar(consulta.id)" class="p-xs text-on-surface-variant hover:text-error transition-colors" title="Eliminar">
+                <span class="material-symbols-outlined text-lg">delete</span>
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="px-md py-lg text-center text-body-sm text-on-surface-variant">
+              No has registrado consultas todavía.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-confirm-modal
+  [visible]="mostrarConfirmacion"
+  titulo="Eliminar consulta"
+  mensaje="¿Seguro que quieres eliminar esta consulta? Esta acción no se puede deshacer."
+  (confirmado)="confirmarEliminar()"
+  (cancelado)="cancelarEliminar()"
+/>

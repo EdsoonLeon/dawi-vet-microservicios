@@ -1,0 +1,44 @@
+<aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col pt-md">
+  <div class="px-md mb-xl flex items-center gap-sm">
+    <div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+      <span class="material-symbols-outlined text-on-primary text-lg">pets</span>
+    </div>
+    <span class="text-headline-sm text-primary">Veterinaria</span>
+  </div>
+
+  <nav class="flex-1 px-sm space-y-xs">
+    <a routerLink="agenda" routerLinkActive="bg-primary-container text-on-primary-container font-bold"
+       class="flex items-center px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all text-label-md">
+      <span class="material-symbols-outlined mr-sm">calendar_today</span>Mi Agenda
+    </a>
+    <a routerLink="consultas" routerLinkActive="bg-primary-container text-on-primary-container font-bold"
+       class="flex items-center px-md py-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all text-label-md">
+      <span class="material-symbols-outlined mr-sm">stethoscope</span>Consultas
+    </a>
+  </nav>
+</aside>
+
+<div class="pl-72">
+  <header class="fixed top-0 left-72 right-0 h-20 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-lg">
+    <p class="text-headline-sm text-on-surface">Panel Veterinario</p>
+
+    <div class="flex items-center gap-md">
+      <div class="flex items-center gap-sm pl-md border-l border-outline-variant">
+        <div class="text-right hidden sm:block">
+          <p class="text-label-md text-on-surface">{{ usuario?.nombre }} {{ usuario?.apellido }}</p>
+          <p class="text-label-sm text-on-surface-variant">Veterinario</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-label-md">
+          {{ iniciales }}
+        </div>
+        <button (click)="cerrarSesion()" class="p-sm text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all" title="Cerrar sesión">
+          <span class="material-symbols-outlined">logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-20 bg-background min-h-screen p-md">
+    <router-outlet />
+  </main>
+</div>
