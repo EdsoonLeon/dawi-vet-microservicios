@@ -7,6 +7,7 @@ import { Cita } from '../../../models/cita';
 import { Mascota } from '../../../models/mascota';
 import { Veterinario } from '../../../models/veterinario';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-citas',
@@ -28,6 +29,7 @@ export class Citas implements OnInit {
   mostrarFormulario = false;
   citaEditandoId: number | null = null;
   mensajeError = signal('');
+  mensajeExito = signal('');
 
   mostrarConfirmacion = false;
   idACancelar: number | null = null;
@@ -40,9 +42,8 @@ export class Citas implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascota.nombre.toLowerCase().includes(termino) ||
-      c.veterinario.usuario.nombre.toLowerCase().includes(termino) ||
-      c.veterinario.usuario.apellido.toLowerCase().includes(termino) ||
+      c.mascotaNombre.toLowerCase().includes(termino) ||
+      c.veterinarioNombre.toLowerCase().includes(termino) ||
       c.estado.toLowerCase().includes(termino)
     );
   });
@@ -65,7 +66,7 @@ export class Citas implements OnInit {
   cargarCitas() {
     this.citaService.listarCitas().subscribe({
       next: (data) => this.citas.set(data),
-      error: () => this.mensajeError.set('No se pudo cargar la lista de citas')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar la lista de citas'))
     });
   }
 
@@ -84,6 +85,10 @@ export class Citas implements OnInit {
   abrirNuevo() {
     this.citaEditandoId = null;
     this.citaForm.reset();
+    this.citaForm.get('mascotaId')?.enable();
+    this.citaForm.get('veterinarioId')?.enable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -92,9 +97,14 @@ export class Citas implements OnInit {
     this.citaForm.setValue({
       fecha: cita.fecha,
       hora: cita.hora.slice(0, 5),
-      mascotaId: String(cita.mascota.id),
-      veterinarioId: String(cita.veterinario.id),
+      mascotaId: String(cita.mascotaId),
+      veterinarioId: String(cita.veterinarioId),
     });
+    // El PUT solo acepta fecha y hora: se deshabilitan mascota y veterinario.
+    this.citaForm.get('mascotaId')?.disable();
+    this.citaForm.get('veterinarioId')?.disable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -102,6 +112,8 @@ export class Citas implements OnInit {
     this.mostrarFormulario = false;
     this.citaEditandoId = null;
     this.citaForm.reset();
+    this.citaForm.get('mascotaId')?.enable();
+    this.citaForm.get('veterinarioId')?.enable();
   }
 
   guardar() {
@@ -110,32 +122,40 @@ export class Citas implements OnInit {
       return;
     }
 
-    const valores = this.citaForm.value;
+    const valores = this.citaForm.getRawValue();
 
     if (this.citaEditandoId) {
       const datosEdicion = { fecha: valores.fecha, hora: valores.hora };
       this.citaService.editarCita(this.citaEditandoId, datosEdicion).subscribe({
-        next: () => { this.cargarCitas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo editar la cita')
+        next: () => {
+          this.mensajeExito.set('Cita actualizada correctamente');
+          this.cargarCitas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo editar la cita'))
       });
     } else {
       const datosRegistro = {
         fecha: valores.fecha,
         hora: valores.hora,
-        mascota: { id: Number(valores.mascotaId) },
-        veterinario: { id: Number(valores.veterinarioId) },
+        mascotaId: Number(valores.mascotaId),
+        veterinarioId: Number(valores.veterinarioId),
       };
       this.citaService.registrarCita(datosRegistro).subscribe({
-        next: () => { this.cargarCitas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo registrar la cita')
+        next: () => {
+          this.mensajeExito.set('Cita registrada correctamente');
+          this.cargarCitas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo registrar la cita'))
       });
     }
   }
 
   cambiarEstado(id: number, estado: string) {
     this.citaService.cambiarEstado(id, estado).subscribe({
-      next: () => this.cargarCitas(),
-      error: () => this.mensajeError.set('No se pudo cambiar el estado')
+      next: () => { this.mensajeExito.set('Estado actualizado correctamente'); this.cargarCitas(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cambiar el estado'))
     });
   }
 
@@ -163,8 +183,8 @@ export class Citas implements OnInit {
     if (this.idACancelar === null) return;
 
     this.citaService.cancelarCita(this.idACancelar).subscribe({
-      next: () => this.cargarCitas(),
-      error: () => this.mensajeError.set('No se pudo cancelar la cita')
+      next: () => { this.mensajeExito.set('Cita cancelada correctamente'); this.cargarCitas(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cancelar la cita'))
     });
     this.idACancelar = null;
   }

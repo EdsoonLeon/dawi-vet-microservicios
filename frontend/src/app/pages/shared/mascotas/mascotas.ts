@@ -5,6 +5,7 @@ import { ClienteService } from '../../../services/cliente-service';
 import { Mascota } from '../../../models/mascota';
 import { Cliente } from '../../../models/cliente';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-mascotas',
@@ -24,6 +25,7 @@ export class Mascotas implements OnInit {
   mostrarFormulario = false;
   mascotaEditandoId: number | null = null;
   mensajeError = signal('');
+  mensajeExito = signal('');
 
   mostrarConfirmacion = false;
   idAEliminar: number | null = null;
@@ -39,8 +41,7 @@ export class Mascotas implements OnInit {
       m.nombre.toLowerCase().includes(termino) ||
       m.especie.toLowerCase().includes(termino) ||
       m.raza.toLowerCase().includes(termino) ||
-      m.cliente.nombre.toLowerCase().includes(termino) ||
-      m.cliente.apellido.toLowerCase().includes(termino)
+      m.clienteNombre.toLowerCase().includes(termino)
     );
   });
 
@@ -60,7 +61,7 @@ export class Mascotas implements OnInit {
   cargarMascotas() {
     this.mascotaService.listarMascotas().subscribe({
       next: (data) => this.mascotas.set(data),
-      error: () => this.mensajeError.set('No se pudo cargar la lista de mascotas')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar la lista de mascotas'))
     });
   }
 
@@ -73,6 +74,9 @@ export class Mascotas implements OnInit {
   abrirNuevo() {
     this.mascotaEditandoId = null;
     this.mascotaForm.reset({ edad: 0 });
+    this.mascotaForm.get('clienteId')?.enable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -83,8 +87,12 @@ export class Mascotas implements OnInit {
       especie: mascota.especie,
       raza: mascota.raza,
       edad: mascota.edad,
-      clienteId: String(mascota.cliente.id),
+      clienteId: String(mascota.clienteId),
     });
+    // El PUT no acepta cambiar el dueño: se deshabilita para no enviarlo.
+    this.mascotaForm.get('clienteId')?.disable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -92,6 +100,7 @@ export class Mascotas implements OnInit {
     this.mostrarFormulario = false;
     this.mascotaEditandoId = null;
     this.mascotaForm.reset();
+    this.mascotaForm.get('clienteId')?.enable();
   }
 
   guardar() {
@@ -100,7 +109,7 @@ export class Mascotas implements OnInit {
       return;
     }
 
-    const valores = this.mascotaForm.value;
+    const valores = this.mascotaForm.getRawValue();
 
     if (this.mascotaEditandoId) {
       const datosEdicion = {
@@ -110,8 +119,12 @@ export class Mascotas implements OnInit {
         edad: valores.edad,
       };
       this.mascotaService.editarMascota(this.mascotaEditandoId, datosEdicion).subscribe({
-        next: () => { this.cargarMascotas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo editar la mascota')
+        next: () => {
+          this.mensajeExito.set('Mascota actualizada correctamente');
+          this.cargarMascotas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo editar la mascota'))
       });
     } else {
       const datosRegistro = {
@@ -119,11 +132,15 @@ export class Mascotas implements OnInit {
         especie: valores.especie,
         raza: valores.raza,
         edad: valores.edad,
-        cliente: { id: Number(valores.clienteId) },
+        clienteId: Number(valores.clienteId),
       };
       this.mascotaService.registrarMascota(datosRegistro).subscribe({
-        next: () => { this.cargarMascotas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo registrar la mascota')
+        next: () => {
+          this.mensajeExito.set('Mascota registrada correctamente');
+          this.cargarMascotas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo registrar la mascota'))
       });
     }
   }
@@ -138,8 +155,8 @@ export class Mascotas implements OnInit {
     if (this.idAEliminar === null) return;
 
     this.mascotaService.eliminarMascota(this.idAEliminar).subscribe({
-      next: () => this.cargarMascotas(),
-      error: () => this.mensajeError.set('No se pudo desactivar la mascota')
+      next: () => { this.mensajeExito.set('Mascota desactivada correctamente'); this.cargarMascotas(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo desactivar la mascota'))
     });
     this.idAEliminar = null;
   }
@@ -151,8 +168,8 @@ export class Mascotas implements OnInit {
 
   activar(id: number) {
     this.mascotaService.activarMascota(id).subscribe({
-      next: () => this.cargarMascotas(),
-      error: () => this.mensajeError.set('No se pudo reactivar la mascota')
+      next: () => { this.mensajeExito.set('Mascota reactivada correctamente'); this.cargarMascotas(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo reactivar la mascota'))
     });
   }
 }

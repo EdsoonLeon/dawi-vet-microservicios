@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Mascota } from '../models/mascota';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MascotaService {
   private http = inject(HttpClient);
-  private readonly urlBase = 'http://localhost:8081/api/mascotas';
+  private readonly urlBase = `${environment.apiUrl}/mascotas`;
 
   registrarMascota(mascota: any): Observable<Mascota> {
     return this.http.post<Mascota>(`${this.urlBase}/registrar`, mascota);

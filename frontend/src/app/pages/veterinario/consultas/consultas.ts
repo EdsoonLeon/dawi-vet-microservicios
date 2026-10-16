@@ -7,6 +7,7 @@ import { UsuarioAuthService } from '../../../services/usuario-auth-service';
 import { Consulta } from '../../../models/consulta';
 import { Mascota } from '../../../models/mascota';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-consultas',
@@ -28,6 +29,7 @@ export class Consultas implements OnInit {
   mostrarFormulario = false;
   consultaEditandoId: number | null = null;
   mensajeError = signal('');
+  mensajeExito = signal('');
   veterinarioId: number | null = null;
 
   mostrarConfirmacion = false;
@@ -41,7 +43,7 @@ export class Consultas implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascota.nombre.toLowerCase().includes(termino) ||
+      c.mascotaNombre.toLowerCase().includes(termino) ||
       c.diagnostico.toLowerCase().includes(termino) ||
       c.tratamiento.toLowerCase().includes(termino)
     );
@@ -71,7 +73,7 @@ export class Consultas implements OnInit {
         this.veterinarioId = vet.id;
         this.cargarConsultas();
       },
-      error: () => this.mensajeError.set('No se pudo cargar tu perfil de veterinario')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar tu perfil de veterinario'))
     });
 
     this.cargarMascotas();
@@ -81,7 +83,7 @@ export class Consultas implements OnInit {
     if (!this.veterinarioId) return;
     this.consultaService.listarPorVeterinario(this.veterinarioId).subscribe({
       next: (data) => this.consultas.set(data),
-      error: () => this.mensajeError.set('No se pudo cargar tus consultas')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar tus consultas'))
     });
   }
 
@@ -97,6 +99,9 @@ export class Consultas implements OnInit {
   abrirNuevo() {
     this.consultaEditandoId = null;
     this.consultaForm.reset();
+    this.consultaForm.get('mascotaId')?.enable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -107,8 +112,12 @@ export class Consultas implements OnInit {
       diagnostico: consulta.diagnostico,
       tratamiento: consulta.tratamiento,
       observacion: consulta.observacion ?? '',
-      mascotaId: String(consulta.mascota.id),
+      mascotaId: String(consulta.mascotaId),
     });
+    // El PUT no acepta cambiar la mascota: se deshabilita para no enviarla.
+    this.consultaForm.get('mascotaId')?.disable();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
@@ -116,6 +125,7 @@ export class Consultas implements OnInit {
     this.mostrarFormulario = false;
     this.consultaEditandoId = null;
     this.consultaForm.reset();
+    this.consultaForm.get('mascotaId')?.enable();
   }
 
   guardar() {
@@ -124,7 +134,7 @@ export class Consultas implements OnInit {
       return;
     }
 
-    const valores = this.consultaForm.value;
+    const valores = this.consultaForm.getRawValue();
 
     if (this.consultaEditandoId) {
       const datosEdicion = {
@@ -134,8 +144,12 @@ export class Consultas implements OnInit {
         observacion: valores.observacion,
       };
       this.consultaService.editarConsulta(this.consultaEditandoId, datosEdicion).subscribe({
-        next: () => { this.cargarConsultas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo editar la consulta')
+        next: () => {
+          this.mensajeExito.set('Consulta actualizada correctamente');
+          this.cargarConsultas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo editar la consulta'))
       });
     } else {
       const datosRegistro = {
@@ -143,12 +157,16 @@ export class Consultas implements OnInit {
         diagnostico: valores.diagnostico,
         tratamiento: valores.tratamiento,
         observacion: valores.observacion,
-        mascota: { id: Number(valores.mascotaId) },
-        veterinario: { id: this.veterinarioId },
+        mascotaId: Number(valores.mascotaId),
+        veterinarioId: this.veterinarioId,
       };
       this.consultaService.registrarConsulta(datosRegistro).subscribe({
-        next: () => { this.cargarConsultas(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo registrar la consulta')
+        next: () => {
+          this.mensajeExito.set('Consulta registrada correctamente');
+          this.cargarConsultas();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo registrar la consulta'))
       });
     }
   }
@@ -163,8 +181,8 @@ export class Consultas implements OnInit {
     if (this.idAEliminar === null) return;
 
     this.consultaService.eliminarConsulta(this.idAEliminar).subscribe({
-      next: () => this.cargarConsultas(),
-      error: () => this.mensajeError.set('No se pudo eliminar la consulta')
+      next: () => { this.mensajeExito.set('Consulta eliminada correctamente'); this.cargarConsultas(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo eliminar la consulta'))
     });
     this.idAEliminar = null;
   }

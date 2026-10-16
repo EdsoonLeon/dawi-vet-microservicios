@@ -7,6 +7,7 @@ import { VeterinarioService } from '../../../services/veterinario-service';
 import { Usuario } from '../../../models/usuario';
 import { Rol } from '../../../models/rol';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-usuarios',
@@ -26,7 +27,10 @@ export class Usuarios implements OnInit {
   roles = signal<Rol[]>([]);
   mostrarFormulario = false;
   usuarioEditandoId: number | null = null;
+  // id propio del veterinario (distinto del id de usuario) cuando se edita uno
+  vetEditandoId: number | null = null;
   mensajeError = signal('');
+  mensajeExito = signal('');
 
   mostrarConfirmacion = false;
   idAEliminar: number | null = null;
@@ -60,12 +64,16 @@ export class Usuarios implements OnInit {
   ngOnInit() {
     this.cargarUsuarios();
     this.cargarRoles();
+
+    // Activa/desactiva las validaciones de especialidad/colegiatura/edad
+    // en vivo, según el rol seleccionado (tanto al crear como al editar).
+    this.usuarioForm.get('rolId')?.valueChanges.subscribe(() => this.actualizarValidadoresVeterinario());
   }
 
   cargarUsuarios() {
     this.usuarioService.listarUsuarios().subscribe({
       next: (data) => this.usuarios.set(data),
-      error: () => this.mensajeError.set('No se pudo cargar la lista de usuarios')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar la lista de usuarios'))
     });
   }
 
@@ -76,22 +84,45 @@ export class Usuarios implements OnInit {
   }
 
   get rolVeterinarioSeleccionado(): boolean {
-    if (this.usuarioEditandoId) return false;
     const rolId = this.usuarioForm.get('rolId')?.value;
     const rol = this.roles().find(r => String(r.id) === String(rolId));
     return rol?.nombre === 'VETERINARIO';
   }
 
+  private actualizarValidadoresVeterinario() {
+    const especialidad = this.usuarioForm.get('especialidad');
+    const colegiatura = this.usuarioForm.get('colegiatura');
+    const edad = this.usuarioForm.get('edadVeterinario');
+
+    if (this.rolVeterinarioSeleccionado) {
+      especialidad?.setValidators([Validators.required]);
+      colegiatura?.setValidators([Validators.required]);
+      edad?.setValidators([Validators.required, Validators.min(18)]);
+    } else {
+      especialidad?.clearValidators();
+      colegiatura?.clearValidators();
+      edad?.clearValidators();
+    }
+    especialidad?.updateValueAndValidity();
+    colegiatura?.updateValueAndValidity();
+    edad?.updateValueAndValidity();
+  }
+
   abrirNuevo() {
     this.usuarioEditandoId = null;
+    this.vetEditandoId = null;
     this.usuarioForm.reset();
     this.usuarioForm.get('clave')?.setValidators([Validators.required]);
     this.usuarioForm.get('clave')?.updateValueAndValidity();
+    this.actualizarValidadoresVeterinario();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
   }
 
   abrirEditar(usuario: Usuario) {
     this.usuarioEditandoId = usuario.id;
+    this.vetEditandoId = null;
     this.usuarioForm.get('clave')?.clearValidators();
     this.usuarioForm.get('clave')?.updateValueAndValidity();
     this.usuarioForm.setValue({
@@ -104,12 +135,32 @@ export class Usuarios implements OnInit {
       colegiatura: '',
       edadVeterinario: '',
     });
+    this.actualizarValidadoresVeterinario();
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.mostrarFormulario = true;
+
+    if (usuario.rol.nombre === 'VETERINARIO') {
+      this.veterinarioService.obtenerPorUsuario(usuario.id).subscribe({
+        next: (vet) => {
+          if (vet) {
+            this.vetEditandoId = vet.id;
+            this.usuarioForm.patchValue({
+              especialidad: vet.especialidad,
+              colegiatura: vet.colegiatura,
+              edadVeterinario: String(vet.edad),
+            });
+          }
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar los datos de veterinario'))
+      });
+    }
   }
 
   cerrarFormulario() {
     this.mostrarFormulario = false;
     this.usuarioEditandoId = null;
+    this.vetEditandoId = null;
     this.usuarioForm.reset();
   }
 
@@ -120,13 +171,54 @@ export class Usuarios implements OnInit {
     }
 
     const valores = this.usuarioForm.value;
+    const esVeterinario = this.rolVeterinarioSeleccionado;
 
-    if (this.rolVeterinarioSeleccionado) {
-      if (!valores.especialidad || !valores.colegiatura || !valores.edadVeterinario) {
-        this.mensajeError.set('Completa especialidad, colegiatura y edad para el veterinario');
+    if (this.usuarioEditandoId) {
+      if (esVeterinario && !this.vetEditandoId) {
+        this.mensajeError.set('No se puede cambiar el rol a Veterinario desde la edición de usuarios.');
         return;
       }
 
+      const datosEdicion: any = {
+        nombre: valores.nombre,
+        apellido: valores.apellido,
+        correo: valores.correo,
+        rol: { id: Number(valores.rolId) },
+      };
+      if (valores.clave && valores.clave.trim() !== '') {
+        datosEdicion.clave = valores.clave;
+      }
+
+      this.usuarioService.editarUsuario(this.usuarioEditandoId, datosEdicion).subscribe({
+        next: () => {
+          if (esVeterinario && this.vetEditandoId) {
+            const datosVet = {
+              especialidad: valores.especialidad,
+              colegiatura: valores.colegiatura,
+              edad: Number(valores.edadVeterinario),
+            };
+            this.veterinarioService.editarVeterinario(this.vetEditandoId, datosVet).subscribe({
+              next: () => {
+                this.mensajeExito.set('Usuario actualizado correctamente');
+                this.cargarUsuarios();
+                this.cerrarFormulario();
+              },
+              error: (err) => this.mensajeError.set(
+                mensajeDeError(err, 'El usuario se actualizó, pero no se pudieron guardar los datos de veterinario')
+              )
+            });
+          } else {
+            this.mensajeExito.set('Usuario actualizado correctamente');
+            this.cargarUsuarios();
+            this.cerrarFormulario();
+          }
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo editar el usuario'))
+      });
+      return;
+    }
+
+    if (esVeterinario) {
       const datosRegistro = {
         especialidad: valores.especialidad,
         colegiatura: valores.colegiatura,
@@ -140,39 +232,31 @@ export class Usuarios implements OnInit {
       };
 
       this.veterinarioService.registrarVeterinario(datosRegistro).subscribe({
-        next: () => { this.cargarUsuarios(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo registrar el veterinario')
+        next: () => {
+          this.mensajeExito.set('Veterinario registrado correctamente');
+          this.cargarUsuarios();
+          this.cerrarFormulario();
+        },
+        error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo registrar el veterinario'))
       });
       return;
     }
 
-    if (this.usuarioEditandoId) {
-      const datosEdicion: any = {
-        nombre: valores.nombre,
-        apellido: valores.apellido,
-        correo: valores.correo,
-        rol: { id: Number(valores.rolId) },
-      };
-      if (valores.clave && valores.clave.trim() !== '') {
-        datosEdicion.clave = valores.clave;
-      }
-      this.usuarioService.editarUsuario(this.usuarioEditandoId, datosEdicion).subscribe({
-        next: () => { this.cargarUsuarios(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo editar el usuario')
-      });
-    } else {
-      const datosRegistro = {
-        nombre: valores.nombre,
-        apellido: valores.apellido,
-        correo: valores.correo,
-        clave: valores.clave,
-        rol: { id: Number(valores.rolId) },
-      };
-      this.usuarioAuthService.registrarUsuario(datosRegistro).subscribe({
-        next: () => { this.cargarUsuarios(); this.cerrarFormulario(); },
-        error: () => this.mensajeError.set('No se pudo registrar el usuario')
-      });
-    }
+    const datosRegistro = {
+      nombre: valores.nombre,
+      apellido: valores.apellido,
+      correo: valores.correo,
+      clave: valores.clave,
+      rol: { id: Number(valores.rolId) },
+    };
+    this.usuarioAuthService.registrarUsuario(datosRegistro).subscribe({
+      next: () => {
+        this.mensajeExito.set('Usuario registrado correctamente');
+        this.cargarUsuarios();
+        this.cerrarFormulario();
+      },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo registrar el usuario'))
+    });
   }
 
   pedirEliminar(id: number) {
@@ -185,8 +269,8 @@ export class Usuarios implements OnInit {
     if (this.idAEliminar === null) return;
 
     this.usuarioService.eliminarUsuario(this.idAEliminar).subscribe({
-      next: () => this.cargarUsuarios(),
-      error: () => this.mensajeError.set('No se pudo desactivar el usuario')
+      next: () => { this.mensajeExito.set('Usuario desactivado correctamente'); this.cargarUsuarios(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo desactivar el usuario'))
     });
     this.idAEliminar = null;
   }
@@ -198,8 +282,8 @@ export class Usuarios implements OnInit {
 
   activar(id: number) {
     this.usuarioService.activarUsuario(id).subscribe({
-      next: () => this.cargarUsuarios(),
-      error: () => this.mensajeError.set('No se pudo reactivar el usuario')
+      next: () => { this.mensajeExito.set('Usuario reactivado correctamente'); this.cargarUsuarios(); },
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo reactivar el usuario'))
     });
   }
 }

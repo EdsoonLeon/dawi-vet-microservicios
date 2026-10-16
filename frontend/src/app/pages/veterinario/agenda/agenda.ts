@@ -2,8 +2,11 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CitaService } from '../../../services/cita-service';
 import { VeterinarioService } from '../../../services/veterinario-service';
+import { MascotaService } from '../../../services/mascota-service';
 import { UsuarioAuthService } from '../../../services/usuario-auth-service';
 import { Cita } from '../../../models/cita';
+import { Mascota } from '../../../models/mascota';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-agenda',
@@ -15,11 +18,16 @@ import { Cita } from '../../../models/cita';
 export class Agenda implements OnInit {
   private citaService = inject(CitaService);
   private veterinarioService = inject(VeterinarioService);
+  private mascotaService = inject(MascotaService);
   private authService = inject(UsuarioAuthService);
 
   citas = signal<Cita[]>([]);
   mensajeError = signal('');
   veterinarioId: number | null = null;
+
+  // Mapa mascotaId -> Mascota, para poder mostrar el dueño de cada cita
+  // (la respuesta de /api/citas ya no trae la mascota ni el cliente anidados).
+  mascotasPorId = signal<Map<number, Mascota>>(new Map());
 
   estados = ['PENDIENTE', 'COMPLETADA', 'CANCELADA', 'NO_ASISTIO'];
 
@@ -31,9 +39,8 @@ export class Agenda implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascota.nombre.toLowerCase().includes(termino) ||
-      c.mascota.cliente.nombre.toLowerCase().includes(termino) ||
-      c.mascota.cliente.apellido.toLowerCase().includes(termino) ||
+      c.mascotaNombre.toLowerCase().includes(termino) ||
+      this.duenoDe(c.mascotaId).toLowerCase().includes(termino) ||
       c.estado.toLowerCase().includes(termino)
     );
   });
@@ -45,6 +52,8 @@ export class Agenda implements OnInit {
       return;
     }
 
+    this.cargarMascotas();
+
     this.veterinarioService.obtenerPorUsuario(usuario.id).subscribe({
       next: (vet) => {
         if (!vet) {
@@ -54,22 +63,36 @@ export class Agenda implements OnInit {
         this.veterinarioId = vet.id;
         this.cargarAgenda();
       },
-      error: () => this.mensajeError.set('No se pudo cargar tu perfil de veterinario')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar tu perfil de veterinario'))
     });
+  }
+
+  cargarMascotas() {
+    this.mascotaService.listarMascotas().subscribe({
+      next: (data) => {
+        const mapa = new Map<number, Mascota>();
+        data.forEach(m => mapa.set(m.id, m));
+        this.mascotasPorId.set(mapa);
+      }
+    });
+  }
+
+  duenoDe(mascotaId: number): string {
+    return this.mascotasPorId().get(mascotaId)?.clienteNombre ?? '';
   }
 
   cargarAgenda() {
     if (!this.veterinarioId) return;
     this.citaService.listarPorVeterinario(this.veterinarioId).subscribe({
       next: (data) => this.citas.set(data),
-      error: () => this.mensajeError.set('No se pudo cargar tu agenda')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cargar tu agenda'))
     });
   }
 
   cambiarEstado(id: number, estado: string) {
     this.citaService.cambiarEstado(id, estado).subscribe({
       next: () => this.cargarAgenda(),
-      error: () => this.mensajeError.set('No se pudo cambiar el estado')
+      error: (err) => this.mensajeError.set(mensajeDeError(err, 'No se pudo cambiar el estado'))
     });
   }
 

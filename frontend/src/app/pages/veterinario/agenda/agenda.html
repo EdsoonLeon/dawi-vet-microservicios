@@ -35,8 +35,8 @@
           <tr class="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
             <td class="px-md py-sm text-body-sm text-on-surface">{{ cita.fecha }}</td>
             <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.hora }}</td>
-            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.mascota.nombre }}</td>
-            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.mascota.cliente.nombre }} {{ cita.mascota.cliente.apellido }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.mascotaNombre }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ duenoDe(cita.mascotaId) }}</td>
             <td class="px-md py-sm">
               <select
                 (change)="cambiarEstado(cita.id, $any($event.target).value)"

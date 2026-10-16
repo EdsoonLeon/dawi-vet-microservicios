@@ -1,9 +1,11 @@
-import { Usuario } from './usuario';
-
 export interface Veterinario {
   id: number;
   especialidad: string;
   colegiatura: string;
   edad: number;
-  usuario: Usuario;
+  activo: boolean;
+  usuarioId: number;
+  nombre: string;
+  apellido: string;
+  correo: string;
 }

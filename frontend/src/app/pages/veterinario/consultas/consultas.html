@@ -24,55 +24,8 @@
   @if (mensajeError()) {
     <p class="text-label-sm text-error">{{ mensajeError() }}</p>
   }
-
-  @if (mostrarFormulario) {
-    <div class="bg-surface-container-lowest rounded-2xl p-lg shadow-sm space-y-md">
-      <h2 class="text-headline-sm text-on-surface">{{ consultaEditandoId ? 'Editar consulta' : 'Nueva consulta' }}</h2>
-
-      <form [formGroup]="consultaForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Fecha</label>
-          <input formControlName="fecha" type="date" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Mascota</label>
-          <select formControlName="mascotaId" [disabled]="!!consultaEditandoId"
-                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
-            <option value="" disabled>Selecciona una mascota</option>
-            @for (mascota of mascotasActivas(); track mascota.id) {
-              <option [value]="mascota.id">{{ mascota.nombre }} ({{ mascota.cliente.nombre }} {{ mascota.cliente.apellido }})</option>
-            }
-          </select>
-          @if (consultaEditandoId) {
-            <p class="text-label-sm text-on-surface-variant">La mascota no se puede cambiar al editar.</p>
-          }
-        </div>
-
-        <div class="space-y-1.5 md:col-span-2">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Diagnóstico</label>
-          <textarea formControlName="diagnostico" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-        </div>
-
-        <div class="space-y-1.5 md:col-span-2">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Tratamiento</label>
-          <textarea formControlName="tratamiento" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-        </div>
-
-        <div class="space-y-1.5 md:col-span-2">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Observación</label>
-          <textarea formControlName="observacion" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-        </div>
-
-        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
-          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
-            Cancelar
-          </button>
-          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
-            Guardar
-          </button>
-        </div>
-      </form>
-    </div>
+  @if (mensajeExito()) {
+    <p class="text-label-sm text-primary">{{ mensajeExito() }}</p>
   }
 
   <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
@@ -90,7 +43,7 @@
         @for (consulta of consultasFiltradas(); track consulta.id) {
           <tr class="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
             <td class="px-md py-sm text-body-sm text-on-surface">{{ consulta.fecha }}</td>
-            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.mascota.nombre }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.mascotaNombre }}</td>
             <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.diagnostico }}</td>
             <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ consulta.tratamiento }}</td>
             <td class="px-md py-sm text-right space-x-xs">
@@ -113,6 +66,79 @@
     </table>
   </div>
 </div>
+
+@if (mostrarFormulario) {
+  <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" (click)="cerrarFormulario()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-lg max-w-[36rem] w-full space-y-md max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <h2 class="text-headline-sm text-on-surface">{{ consultaEditandoId ? 'Editar consulta' : 'Nueva consulta' }}</h2>
+        <button type="button" (click)="cerrarFormulario()" class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (mensajeError()) {
+        <p class="text-label-sm text-error">{{ mensajeError() }}</p>
+      }
+
+      <form [formGroup]="consultaForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Fecha</label>
+          <input formControlName="fecha" type="date" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (consultaForm.get('fecha')?.invalid && consultaForm.get('fecha')?.touched) {
+            <p class="text-label-sm text-error">La fecha es obligatoria.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Mascota</label>
+          <select formControlName="mascotaId"
+                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+            <option value="" disabled>Selecciona una mascota</option>
+            @for (mascota of mascotasActivas(); track mascota.id) {
+              <option [value]="mascota.id">{{ mascota.nombre }} ({{ mascota.clienteNombre }})</option>
+            }
+          </select>
+          @if (consultaEditandoId) {
+            <p class="text-label-sm text-on-surface-variant">La mascota no se puede cambiar al editar.</p>
+          }
+          @if (consultaForm.get('mascotaId')?.invalid && consultaForm.get('mascotaId')?.touched) {
+            <p class="text-label-sm text-error">Selecciona una mascota.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Diagnóstico</label>
+          <textarea formControlName="diagnostico" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          @if (consultaForm.get('diagnostico')?.invalid && consultaForm.get('diagnostico')?.touched) {
+            <p class="text-label-sm text-error">El diagnóstico es obligatorio.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Tratamiento</label>
+          <textarea formControlName="tratamiento" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          @if (consultaForm.get('tratamiento')?.invalid && consultaForm.get('tratamiento')?.touched) {
+            <p class="text-label-sm text-error">El tratamiento es obligatorio.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Observación</label>
+          <textarea formControlName="observacion" rows="2" class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+        </div>
+
+        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
+          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 <app-confirm-modal
   [visible]="mostrarConfirmacion"

@@ -23,43 +23,8 @@
   @if (mensajeError) {
     <p class="text-label-sm text-error">{{ mensajeError }}</p>
   }
-
-  @if (mostrarFormulario) {
-    <div class="bg-surface-container-lowest rounded-2xl p-lg shadow-sm space-y-md">
-      <h2 class="text-headline-sm text-on-surface">{{ clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
-
-      <form [formGroup]="clienteForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Nombre</label>
-          <input formControlName="nombre" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Apellido</label>
-          <input formControlName="apellido" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Teléfono</label>
-          <input formControlName="telefono" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Correo</label>
-          <input formControlName="correo" type="email" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5 md:col-span-2">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Dirección</label>
-          <input formControlName="direccion" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-
-        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
-          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
-            Cancelar
-          </button>
-          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
-            Guardar
-          </button>
-        </div>
-      </form>
-    </div>
+  @if (mensajeExito) {
+    <p class="text-label-sm text-primary">{{ mensajeExito }}</p>
   }
 
   <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
@@ -114,6 +79,70 @@
     </table>
   </div>
 </div>
+
+@if (mostrarFormulario) {
+  <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" (click)="cerrarFormulario()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-lg max-w-[36rem] w-full space-y-md max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <h2 class="text-headline-sm text-on-surface">{{ clienteEditandoId ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
+        <button type="button" (click)="cerrarFormulario()" class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (mensajeError) {
+        <p class="text-label-sm text-error">{{ mensajeError }}</p>
+      }
+
+      <form [formGroup]="clienteForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Nombre</label>
+          <input formControlName="nombre" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (clienteForm.get('nombre')?.invalid && clienteForm.get('nombre')?.touched) {
+            <p class="text-label-sm text-error">El nombre es obligatorio.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Apellido</label>
+          <input formControlName="apellido" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (clienteForm.get('apellido')?.invalid && clienteForm.get('apellido')?.touched) {
+            <p class="text-label-sm text-error">El apellido es obligatorio.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Teléfono</label>
+          <input formControlName="telefono" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (clienteForm.get('telefono')?.invalid && clienteForm.get('telefono')?.touched) {
+            <p class="text-label-sm text-error">El teléfono es obligatorio.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Correo</label>
+          <input formControlName="correo" type="email" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (clienteForm.get('correo')?.invalid && clienteForm.get('correo')?.touched) {
+            <p class="text-label-sm text-error">Ingresa un correo válido.</p>
+          }
+        </div>
+        <div class="space-y-1.5 md:col-span-2">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Dirección</label>
+          <input formControlName="direccion" type="text" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (clienteForm.get('direccion')?.invalid && clienteForm.get('direccion')?.touched) {
+            <p class="text-label-sm text-error">La dirección es obligatoria.</p>
+          }
+        </div>
+
+        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
+          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 <app-confirm-modal
   [visible]="mostrarConfirmacion"

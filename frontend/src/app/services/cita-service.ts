@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Cita } from '../models/cita';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CitaService {
   private http = inject(HttpClient);
-  private readonly urlBase = 'http://localhost:8081/api/citas';
+  private readonly urlBase = `${environment.apiUrl}/citas`;
 
   registrarCita(cita: any): Observable<Cita> {
     return this.http.post<Cita>(`${this.urlBase}/registrar`, cita);
@@ -20,6 +21,10 @@ export class CitaService {
 
   listarPorVeterinario(veterinarioId: number): Observable<Cita[]> {
     return this.http.get<Cita[]>(`${this.urlBase}/veterinario/${veterinarioId}`);
+  }
+
+  listarPorMascota(mascotaId: number): Observable<Cita[]> {
+    return this.http.get<Cita[]>(`${this.urlBase}/mascota/${mascotaId}`);
   }
 
   obtenerPorId(id: number): Observable<Cita> {

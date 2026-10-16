@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 // Sirve para navegar entre rutas desde código
 import { UsuarioAuthService } from '../../services/usuario-auth-service';
 // Servicio que llama a la API de login
+import { mensajeDeError } from '../../shared/http-error.util';
 
 @Component({
   selector: 'app-login',
@@ -49,14 +50,14 @@ export class Login {
 
       error: (err) => {
         // falló el login (401, etc.)
-        this.mensajeError = 'Error al iniciar sesión. Verifique sus credenciales.';
+        this.mensajeError = mensajeDeError(err, 'Error al iniciar sesión. Verifique sus credenciales.');
       }
     });
   }
 
   private redirigirSegunRol(rol: string) {
   switch (rol) {
-    case 'ADMINISTRADOR':
+    case 'ADMIN':
       this.router.navigate(['/admin']);
       break;
     case 'VETERINARIO':

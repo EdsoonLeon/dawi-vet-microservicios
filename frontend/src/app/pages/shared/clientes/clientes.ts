@@ -3,6 +3,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angu
 import { ClienteService } from '../../../services/cliente-service';
 import { Cliente } from '../../../models/cliente';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
+import { mensajeDeError } from '../../../shared/http-error.util';
 
 @Component({
   selector: 'app-clientes',
@@ -20,6 +21,7 @@ export class Clientes implements OnInit {
   mostrarFormulario = false;
   clienteEditandoId: number | null = null;
   mensajeError = '';
+  mensajeExito = '';
 
   mostrarConfirmacion = false;
   idAEliminar: number | null = null;
@@ -56,8 +58,8 @@ export class Clientes implements OnInit {
         this.clientes = data;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.mensajeError = 'No se pudo cargar la lista de clientes';
+      error: (err) => {
+        this.mensajeError = mensajeDeError(err, 'No se pudo cargar la lista de clientes');
         this.cdr.markForCheck();
       }
     });
@@ -66,6 +68,8 @@ export class Clientes implements OnInit {
   abrirNuevo() {
     this.clienteEditandoId = null;
     this.clienteForm.reset();
+    this.mensajeError = '';
+    this.mensajeExito = '';
     this.mostrarFormulario = true;
   }
 
@@ -78,6 +82,8 @@ export class Clientes implements OnInit {
       direccion: cliente.direccion,
       correo: cliente.correo,
     });
+    this.mensajeError = '';
+    this.mensajeExito = '';
     this.mostrarFormulario = true;
   }
 
@@ -97,13 +103,29 @@ export class Clientes implements OnInit {
 
     if (this.clienteEditandoId) {
       this.clienteService.editarCliente(this.clienteEditandoId, datos).subscribe({
-        next: () => { this.cargarClientes(); this.cerrarFormulario(); this.cdr.markForCheck(); },
-        error: () => { this.mensajeError = 'No se pudo editar el cliente'; this.cdr.markForCheck(); }
+        next: () => {
+          this.mensajeExito = 'Cliente actualizado correctamente';
+          this.cargarClientes();
+          this.cerrarFormulario();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.mensajeError = mensajeDeError(err, 'No se pudo editar el cliente');
+          this.cdr.markForCheck();
+        }
       });
     } else {
       this.clienteService.registrarCliente(datos).subscribe({
-        next: () => { this.cargarClientes(); this.cerrarFormulario(); this.cdr.markForCheck(); },
-        error: () => { this.mensajeError = 'No se pudo registrar el cliente'; this.cdr.markForCheck(); }
+        next: () => {
+          this.mensajeExito = 'Cliente registrado correctamente';
+          this.cargarClientes();
+          this.cerrarFormulario();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.mensajeError = mensajeDeError(err, 'No se pudo registrar el cliente');
+          this.cdr.markForCheck();
+        }
       });
     }
   }
@@ -118,8 +140,8 @@ export class Clientes implements OnInit {
     if (this.idAEliminar === null) return;
 
     this.clienteService.eliminarCliente(this.idAEliminar).subscribe({
-      next: () => this.cargarClientes(),
-      error: () => { this.mensajeError = 'No se pudo desactivar el cliente'; this.cdr.markForCheck(); }
+      next: () => { this.mensajeExito = 'Cliente desactivado correctamente'; this.cargarClientes(); },
+      error: (err) => { this.mensajeError = mensajeDeError(err, 'No se pudo desactivar el cliente'); this.cdr.markForCheck(); }
     });
     this.idAEliminar = null;
   }
@@ -131,8 +153,8 @@ export class Clientes implements OnInit {
 
   activar(id: number) {
     this.clienteService.activarCliente(id).subscribe({
-      next: () => this.cargarClientes(),
-      error: () => { this.mensajeError = 'No se pudo reactivar el cliente'; this.cdr.markForCheck(); }
+      next: () => { this.mensajeExito = 'Cliente reactivado correctamente'; this.cargarClientes(); },
+      error: (err) => { this.mensajeError = mensajeDeError(err, 'No se pudo reactivar el cliente'); this.cdr.markForCheck(); }
     });
   }
 }

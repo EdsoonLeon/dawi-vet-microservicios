@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable ,map} from 'rxjs';
 import { Usuario } from '../models/usuario';
+import { environment } from '../../environments/environment';
 
 
 @Injectable({
@@ -9,7 +10,7 @@ import { Usuario } from '../models/usuario';
 })
 export class UsuarioService {
   private http = inject(HttpClient);
-  private readonly urlBase = 'http://localhost:8081/api/usuarios';
+  private readonly urlBase = `${environment.apiUrl}/usuarios`;
 
   listarUsuarios(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(this.urlBase);

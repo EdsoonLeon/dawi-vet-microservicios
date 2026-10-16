@@ -24,57 +24,8 @@
   @if (mensajeError()) {
     <p class="text-label-sm text-error">{{ mensajeError() }}</p>
   }
-
-  @if (mostrarFormulario) {
-    <div class="bg-surface-container-lowest rounded-2xl p-lg shadow-sm space-y-md">
-      <h2 class="text-headline-sm text-on-surface">{{ citaEditandoId ? 'Editar cita' : 'Nueva cita' }}</h2>
-
-      <form [formGroup]="citaForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Fecha</label>
-          <input formControlName="fecha" type="date" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Hora</label>
-          <input formControlName="hora" type="time" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Mascota</label>
-          <select formControlName="mascotaId" [disabled]="!!citaEditandoId"
-                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
-            <option value="" disabled>Selecciona una mascota</option>
-            @for (mascota of mascotasActivas(); track mascota.id) {
-              <option [value]="mascota.id">{{ mascota.nombre }} ({{ mascota.cliente.nombre }} {{ mascota.cliente.apellido }})</option>
-            }
-          </select>
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Veterinario</label>
-          <select formControlName="veterinarioId" [disabled]="!!citaEditandoId"
-                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
-            <option value="" disabled>Selecciona un veterinario</option>
-            @for (vet of veterinarios(); track vet.id) {
-              <option [value]="vet.id">{{ vet.usuario.nombre }} {{ vet.usuario.apellido }} - {{ vet.especialidad }}</option>
-            }
-          </select>
-        </div>
-
-        @if (citaEditandoId) {
-          <p class="text-label-sm text-on-surface-variant md:col-span-2">Solo puedes cambiar fecha y hora. Mascota y veterinario no se pueden editar.</p>
-        }
-
-        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
-          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
-            Cancelar
-          </button>
-          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
-            Guardar
-          </button>
-        </div>
-      </form>
-    </div>
+  @if (mensajeExito()) {
+    <p class="text-label-sm text-primary">{{ mensajeExito() }}</p>
   }
 
   <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
@@ -94,8 +45,8 @@
           <tr class="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
             <td class="px-md py-sm text-body-sm text-on-surface">{{ cita.fecha }}</td>
             <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.hora }}</td>
-            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.mascota.nombre }}</td>
-            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.veterinario.usuario.nombre }} {{ cita.veterinario.usuario.apellido }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.mascotaNombre }}</td>
+            <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ cita.veterinarioNombre }}</td>
             <td class="px-md py-sm">
               <select
                 (change)="cambiarEstado(cita.id, $any($event.target).value)"
@@ -127,6 +78,81 @@
     </table>
   </div>
 </div>
+
+@if (mostrarFormulario) {
+  <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" (click)="cerrarFormulario()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-lg max-w-[36rem] w-full space-y-md max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <h2 class="text-headline-sm text-on-surface">{{ citaEditandoId ? 'Editar cita' : 'Nueva cita' }}</h2>
+        <button type="button" (click)="cerrarFormulario()" class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (mensajeError()) {
+        <p class="text-label-sm text-error">{{ mensajeError() }}</p>
+      }
+
+      <form [formGroup]="citaForm" (ngSubmit)="guardar()" class="grid grid-cols-1 md:grid-cols-2 gap-md">
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Fecha</label>
+          <input formControlName="fecha" type="date" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (citaForm.get('fecha')?.invalid && citaForm.get('fecha')?.touched) {
+            <p class="text-label-sm text-error">La fecha es obligatoria.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Hora</label>
+          <input formControlName="hora" type="time" class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (citaForm.get('hora')?.invalid && citaForm.get('hora')?.touched) {
+            <p class="text-label-sm text-error">La hora es obligatoria.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Mascota</label>
+          <select formControlName="mascotaId"
+                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+            <option value="" disabled>Selecciona una mascota</option>
+            @for (mascota of mascotasActivas(); track mascota.id) {
+              <option [value]="mascota.id">{{ mascota.nombre }} ({{ mascota.clienteNombre }})</option>
+            }
+          </select>
+          @if (citaForm.get('mascotaId')?.invalid && citaForm.get('mascotaId')?.touched) {
+            <p class="text-label-sm text-error">Selecciona una mascota.</p>
+          }
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Veterinario</label>
+          <select formControlName="veterinarioId"
+                  class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+            <option value="" disabled>Selecciona un veterinario</option>
+            @for (vet of veterinarios(); track vet.id) {
+              <option [value]="vet.id">{{ vet.nombre }} {{ vet.apellido }} - {{ vet.especialidad }}</option>
+            }
+          </select>
+          @if (citaForm.get('veterinarioId')?.invalid && citaForm.get('veterinarioId')?.touched) {
+            <p class="text-label-sm text-error">Selecciona un veterinario.</p>
+          }
+        </div>
+
+        @if (citaEditandoId) {
+          <p class="text-label-sm text-on-surface-variant md:col-span-2">Solo puedes cambiar fecha y hora. Mascota y veterinario no se pueden editar.</p>
+        }
+
+        <div class="md:col-span-2 flex gap-sm justify-end pt-sm">
+          <button type="button" (click)="cerrarFormulario()" class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 <app-confirm-modal
   [visible]="mostrarConfirmacion"

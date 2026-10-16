@@ -1,5 +1,3 @@
-import { Cliente } from './cliente';
-
 export interface Mascota {
   id: number;
   nombre: string;
@@ -7,5 +5,6 @@ export interface Mascota {
   raza: string;
   edad: number;
   activo: boolean;
-  cliente: Cliente;
+  clienteId: number;
+  clienteNombre: string;
 }

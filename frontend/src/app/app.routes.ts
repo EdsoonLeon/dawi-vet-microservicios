@@ -18,7 +18,7 @@ export const routes: Routes = [
     path: 'admin',
     component: Admin,
     canActivate: [authGuard],
-    data: { roles: ['ADMINISTRADOR'] },
+    data: { roles: ['ADMIN'] },
     children: [
       { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
       { path: 'usuarios', component: Usuarios },
