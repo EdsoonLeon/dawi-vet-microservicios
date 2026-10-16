@@ -1,8 +1,11 @@
-<main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-container-low to-primary-container/20 p-4">
-  <div class="flex flex-col lg:flex-row w-full max-w-5xl min-h-[600px] rounded-xl overflow-hidden shadow-2xl bg-surface-container-lowest">
+<main class="min-h-screen relative flex items-center justify-center p-4 bg-[url('/fondo.avif')] bg-cover bg-center bg-no-repeat">
+  <!-- Overlay oscuro para que el formulario se lea bien sobre el fondo -->
+  <div class="absolute inset-0 bg-on-surface/55"></div>
+
+  <div class="relative z-10 flex flex-col md:flex-row w-full max-w-5xl min-h-[600px] rounded-xl overflow-hidden shadow-2xl bg-surface-container-lowest">
 
     <!-- Columna izquierda: formulario -->
-    <div class="flex flex-col flex-1 p-8 lg:p-16 justify-center relative z-10">
+    <div class="flex flex-col flex-1 p-8 lg:p-16 justify-center">
       <div class="w-full max-w-[24rem] mx-auto flex flex-col space-y-6">
 
         <!-- Logo y marca -->
@@ -77,19 +80,22 @@
       </div>
     </div>
 
-    <!-- Columna derecha: showcase glassmorphism -->
-    <div class="hidden lg:flex flex-1 relative overflow-hidden items-center justify-center p-12">
-      <div class="absolute inset-0 bg-gradient-to-br from-primary-container via-surface-container-low to-secondary-container opacity-80 mix-blend-multiply"></div>
-      <div class="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-primary/30 rounded-full mix-blend-screen filter blur-[80px]"></div>
-      <div class="absolute -bottom-[20%] -left-[10%] w-[500px] h-[500px] bg-secondary/30 rounded-full mix-blend-screen filter blur-[80px]"></div>
+    <!-- Columna derecha: imagen de fondo + texto, oculta en pantallas menores a 768px -->
+    <div class="hidden md:flex flex-1 relative overflow-hidden items-center justify-center p-12">
+      <img
+        src="/imagenvet.webp"
+        alt="Veterinario examinando con cuidado a una mascota en consulta"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+      <div class="absolute inset-0 bg-gradient-to-br from-on-surface/70 via-on-surface/40 to-on-surface/70"></div>
 
-      <div class="relative z-10 max-w-[32rem] w-full bg-white/10 backdrop-blur-3xl rounded-xl p-10 shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/40">
+      <div class="relative z-10 max-w-[32rem] w-full p-10">
         <div class="flex flex-col items-center text-center space-y-6 relative z-20">
-          <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center shadow-lg border border-white/50">
-            <span class="material-symbols-outlined text-4xl text-on-surface">favorite</span>
+          <div class="w-20 h-20 bg-white/20 rounded-lg flex items-center justify-center shadow-lg border border-white/50">
+            <span class="material-symbols-outlined text-4xl text-white">favorite</span>
           </div>
-          <h2 class="text-headline-lg text-on-surface">Sistema de Gestión Veterinaria</h2>
-          <p class="text-body-lg text-on-surface/90 leading-relaxed max-w-[24rem]">
+          <h2 class="text-headline-lg text-white drop-shadow-md">Sistema de Gestión Veterinaria</h2>
+          <p class="text-body-lg text-white/90 leading-relaxed max-w-[24rem] drop-shadow-md">
             Administra pacientes, citas e historiales médicos de forma eficiente y segura, todo en un solo lugar.
           </p>
         </div>
