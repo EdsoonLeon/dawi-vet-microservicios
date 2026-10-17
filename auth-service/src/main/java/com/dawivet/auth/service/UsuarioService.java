@@ -1,38 +1,58 @@
 package com.dawivet.auth.service;
 
+import static com.dawivet.auth.util.CorreoNormalizador.normalizar;
+
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.dawivet.auth.dto.UsuarioActualizacionRequest;
+import com.dawivet.auth.dto.UsuarioRegistroRequest;
+import com.dawivet.auth.model.Rol;
 import com.dawivet.auth.model.Usuario;
+import com.dawivet.auth.repository.IRolRepository;
 import com.dawivet.auth.repository.IUsuarioRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class UsuarioService {
 
-    @Autowired
-    private IUsuarioRepository repoUsu;
+    private final IUsuarioRepository repoUsu;
+    private final IRolRepository repoRol;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public Usuario registrarUsuario(UsuarioRegistroRequest request) {
+        Rol rol = repoRol.findById(request.rol().id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no encontrado"));
+        String correo = normalizar(request.correo());
+        validarCorreoDisponible(correo, null);
+        validarNuevaClave(request.clave());
 
-    public Usuario registrarUsuario(Usuario nuevo) {
-        nuevo.setClave(passwordEncoder.encode(nuevo.getClave()));
+        Usuario nuevo = new Usuario();
+        nuevo.setNombre(request.nombre());
+        nuevo.setApellido(request.apellido());
+        nuevo.setCorreo(correo);
+        nuevo.setClave(passwordEncoder.encode(request.clave()));
+        nuevo.setRol(rol);
+        nuevo.setActivo(true);
         return repoUsu.save(nuevo);
     }
 
-    // AHORA RECIBE CORREO Y CLAVE (LO ENVIA EL LoginRequest)
     public Usuario login(String correo, String clave) {
-        Usuario encontrado = repoUsu.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no Encontrado"));
+        Usuario encontrado = repoUsu.findByCorreoIgnoreCase(normalizar(correo))
+                .orElseThrow(this::credencialesInvalidas);
 
-        if (!passwordEncoder.matches(clave, encontrado.getClave())) {
-            throw new RuntimeException("Contraseña incorrecta");
-        }
-        if (!encontrado.getActivo()) {
-            throw new RuntimeException("Usuario inactivo");
+        if (clave.getBytes(StandardCharsets.UTF_8).length > 72
+                || !passwordEncoder.matches(clave, encontrado.getClave())
+                || !Boolean.TRUE.equals(encontrado.getActivo())) {
+            throw credencialesInvalidas();
         }
         return encontrado;
     }
@@ -46,20 +66,36 @@ public class UsuarioService {
     }
 
     public Usuario obtnerPorid(Integer id) {
-        return repoUsu.findById(id).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return repoUsu.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
 
-    public Usuario editarUsuario(Integer id, Usuario nuevoDatos) {
-        Usuario existente = repoUsu.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
+    public Usuario editarUsuario(Integer id, UsuarioActualizacionRequest request) {
+        Usuario existente = obtnerPorid(id);
 
-        existente.setNombre(nuevoDatos.getNombre());
-        existente.setApellido(nuevoDatos.getApellido());
-        existente.setCorreo(nuevoDatos.getCorreo());
-        existente.setRol(nuevoDatos.getRol());
+        if (request.nombre() != null) {
+            existente.setNombre(request.nombre());
+        }
+        if (request.apellido() != null) {
+            existente.setApellido(request.apellido());
+        }
+        if (request.correo() != null) {
+            if (request.correo().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo no puede estar vacío");
+            }
+            String correo = normalizar(request.correo());
+            validarCorreoDisponible(correo, id);
+            existente.setCorreo(correo);
+        }
+        if (request.rol() != null) {
+            Rol rol = repoRol.findById(request.rol().id())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no encontrado"));
+            existente.setRol(rol);
+        }
 
-        if (nuevoDatos.getClave() != null && !nuevoDatos.getClave().isBlank()) {
-            existente.setClave(passwordEncoder.encode(nuevoDatos.getClave()));
+        if (request.clave() != null && !request.clave().isBlank()) {
+            validarNuevaClave(request.clave());
+            existente.setClave(passwordEncoder.encode(request.clave()));
         }
         return repoUsu.save(existente);
     }
@@ -74,5 +110,26 @@ public class UsuarioService {
         Usuario usuario = obtnerPorid(id);
         usuario.setActivo(true);
         return repoUsu.save(usuario);
+    }
+
+    private void validarCorreoDisponible(String correo, Integer usuarioId) {
+        boolean duplicado = usuarioId == null
+                ? repoUsu.findByCorreoIgnoreCase(correo).isPresent()
+                : repoUsu.existsByCorreoIgnoreCaseAndIdNot(correo, usuarioId);
+        if (duplicado) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El correo ya está registrado");
+        }
+    }
+
+    private void validarNuevaClave(String clave) {
+        if (clave == null || clave.isBlank() || clave.length() < 12
+                || clave.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La contraseña debe tener al menos 12 caracteres y no superar 72 bytes");
+        }
+    }
+
+    private BadCredentialsException credencialesInvalidas() {
+        return new BadCredentialsException("Credenciales inválidas");
     }
 }

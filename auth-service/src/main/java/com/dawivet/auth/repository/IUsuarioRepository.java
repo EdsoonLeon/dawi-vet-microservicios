@@ -11,8 +11,11 @@ import com.dawivet.auth.model.Usuario;
 @Repository
 public interface IUsuarioRepository extends JpaRepository<Usuario, Integer> {
 
-    // BUSCADOR POR CORREO
-    Optional<Usuario> findByCorreo(String correo);
+    Optional<Usuario> findByCorreoIgnoreCase(String correo);
+
+    boolean existsByCorreoIgnoreCaseAndIdNot(String correo, Integer id);
+
+    boolean existsByRolNombre(String nombre);
 
     // PARA LISTAR SOLO LOS USUARIOS ACTIVOS
     List<Usuario> findByActivoTrue();

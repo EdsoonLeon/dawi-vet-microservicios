@@ -1,0 +1,278 @@
+name: dawi-vet
+
+x-spring-service: &spring-service
+  init: true
+  restart: unless-stopped
+  networks:
+    - dawi-vet-network
+
+x-spring-environment: &spring-environment
+  SPRING_PROFILES_ACTIVE: docker
+  TZ: America/Lima
+  JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms64m -Xmx384m -Djava.security.egd=file:/dev/./urandom}
+
+x-eureka-dependency: &eureka-dependency
+  eureka-server:
+    condition: service_healthy
+
+x-infrastructure-dependencies: &infrastructure-dependencies
+  mysql:
+    condition: service_healthy
+  eureka-server:
+    condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dawi-vet-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD en .env}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?Defina AUTH_DB_PASSWORD en .env}
+      CLIENTES_DB_PASSWORD: ${CLIENTES_DB_PASSWORD:?Defina CLIENTES_DB_PASSWORD en .env}
+      VETERINARIOS_DB_PASSWORD: ${VETERINARIOS_DB_PASSWORD:?Defina VETERINARIOS_DB_PASSWORD en .env}
+      MASCOTAS_DB_PASSWORD: ${MASCOTAS_DB_PASSWORD:?Defina MASCOTAS_DB_PASSWORD en .env}
+      CITAS_DB_PASSWORD: ${CITAS_DB_PASSWORD:?Defina CITAS_DB_PASSWORD en .env}
+      CONSULTAS_DB_PASSWORD: ${CONSULTAS_DB_PASSWORD:?Defina CONSULTAS_DB_PASSWORD en .env}
+      VACUNAS_DB_PASSWORD: ${VACUNAS_DB_PASSWORD:?Defina VACUNAS_DB_PASSWORD en .env}
+      TZ: America/Lima
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - dawi-vet-network
+
+  eureka-server:
+    <<: *spring-service
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: dawi-vet-eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      <<: *spring-environment
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c "exec 3<>/dev/tcp/127.0.0.1/8761 &&
+          printf 'GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '"
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  auth-service:
+    <<: *spring-service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-auth-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_auth
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?Defina AUTH_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8081'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  clientes-service:
+    <<: *spring-service
+    build:
+      context: ./clientes-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-clientes-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_clientes
+      DB_PASSWORD: ${CLIENTES_DB_PASSWORD:?Defina CLIENTES_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8082'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  veterinarios-service:
+    <<: *spring-service
+    build:
+      context: ./veterinarios-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-veterinarios-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_veterinarios
+      DB_PASSWORD: ${VETERINARIOS_DB_PASSWORD:?Defina VETERINARIOS_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8083'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  mascotas-service:
+    <<: *spring-service
+    build:
+      context: ./mascotas-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-mascotas-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_mascotas
+      DB_PASSWORD: ${MASCOTAS_DB_PASSWORD:?Defina MASCOTAS_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+      clientes-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8086'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  citas-service:
+    <<: *spring-service
+    build:
+      context: ./citas-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-citas-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_citas
+      DB_PASSWORD: ${CITAS_DB_PASSWORD:?Defina CITAS_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+      mascotas-service:
+        condition: service_healthy
+      veterinarios-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8084'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  consultas-service:
+    <<: *spring-service
+    build:
+      context: ./consultas-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-consultas-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_consultas
+      DB_PASSWORD: ${CONSULTAS_DB_PASSWORD:?Defina CONSULTAS_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+      mascotas-service:
+        condition: service_healthy
+      veterinarios-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8085'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  vacunas-service:
+    <<: *spring-service
+    build:
+      context: ./vacunas-service
+      dockerfile: Dockerfile
+    container_name: dawi-vet-vacunas-service
+    environment:
+      <<: *spring-environment
+      DB_USERNAME: dawivet_vacunas
+      DB_PASSWORD: ${VACUNAS_DB_PASSWORD:?Defina VACUNAS_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET en .env}
+    depends_on:
+      <<: *infrastructure-dependencies
+      mascotas-service:
+        condition: service_healthy
+      veterinarios-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ': >/dev/tcp/127.0.0.1/8087'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  api-gateway:
+    <<: *spring-service
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: dawi-vet-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *spring-environment
+    depends_on:
+      <<: *eureka-dependency
+      auth-service:
+        condition: service_healthy
+      clientes-service:
+        condition: service_healthy
+      veterinarios-service:
+        condition: service_healthy
+      mascotas-service:
+        condition: service_healthy
+      citas-service:
+        condition: service_healthy
+      consultas-service:
+        condition: service_healthy
+      vacunas-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c "exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /api/roles HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+networks:
+  dawi-vet-network:
+    name: dawi-vet-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: dawi-vet-mysql-data

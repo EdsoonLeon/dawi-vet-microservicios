@@ -21,6 +21,8 @@ dist/
 
 # Credenciales y entorno
 .env
+.env.*
+!.env.example
 application-local.yml
 
 # Sistema
