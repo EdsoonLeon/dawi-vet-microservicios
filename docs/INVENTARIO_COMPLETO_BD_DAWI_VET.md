@@ -10,7 +10,7 @@ Se inspeccionaron los nueve proyectos, todos los archivos Java de los siete micr
 
 ### 1.1 Limitación de la inspección física
 
-**NO VERIFICADO:** el esquema físico de MySQL. El comando Docker de WSL no está disponible, Docker Desktop informó que no podía conectarse a `dockerDesktopLinuxEngine` y el puerto publicado `3307` no estaba escuchando. No se inició ni reinició ningún contenedor, en cumplimiento de las restricciones de la auditoría. Por ello no fue posible ejecutar `INFORMATION_SCHEMA`, `SHOW TABLES`, `SHOW COLUMNS`, `SHOW INDEX` ni `SHOW CREATE TABLE`.
+**NO VERIFICADO:** el esquema físico de MySQL. El comando Docker de WSL no está disponible, Docker Desktop informó que no podía conectarse a `dockerDesktopLinuxEngine` y el puerto publicado de MySQL no estaba escuchando. No se inició ni reinició ningún contenedor, en cumplimiento de las restricciones de la auditoría. Por ello no fue posible ejecutar `INFORMATION_SCHEMA`, `SHOW TABLES`, `SHOW COLUMNS`, `SHOW INDEX` ni `SHOW CREATE TABLE`.
 
 Consecuencias:
 
@@ -44,7 +44,7 @@ Se encontraron exactamente **9 entidades JPA**. No existen `@MappedSuperclass`, 
 | `consultas_db` | `consultas-service` | `jdbc:mysql://localhost:3306/consultas_db` | `jdbc:mysql://mysql:3306/consultas_db` | Ninguna |
 | `vacunas_db` | `vacunas-service` | `jdbc:mysql://localhost:3306/vacunas_db` | `jdbc:mysql://mysql:3306/vacunas_db` | Ninguna |
 
-Los siete nombres también aparecen en el script de inicialización mediante `CREATE DATABASE IF NOT EXISTS ... CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`. El script solo crea bases y usuarios/permisos; no crea tablas. `compose.yaml` usa una única instancia `mysql:8.4`, publica `3307:3306` y monta un volumen persistente.
+Los siete nombres también aparecen en el script de inicialización mediante `CREATE DATABASE IF NOT EXISTS ... CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`. El script solo crea bases y usuarios/permisos; no crea tablas. `compose.yaml` usa una única instancia `mysql:8.4`, publica `127.0.0.1:3306:3306` y monta un volumen persistente.
 
 Todos los microservicios funcionales configuran `spring.jpa.hibernate.ddl-auto=update` en `application.properties`. El perfil Docker hereda esa propiedad del archivo base y reemplaza URL/usuario/contraseña. Esto permite que un volumen contenga objetos históricos que Hibernate no elimina; su ausencia o presencia no puede resolverse sin MySQL.
 

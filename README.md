@@ -23,7 +23,7 @@ Próximamente: `inventario-service` (8088).
 ## Requisitos
 
 - JDK 17
-- MySQL en el puerto 3306, usuario `root` sin clave (si tienes clave, cámbiala en `spring.datasource.password` de cada servicio)
+- MySQL 8.0 en Windows mediante el servicio `MySQL80`, disponible en `localhost:3306`
 - Git y Postman
 - Spring Tools (opcional, también se ejecuta por terminal)
 
@@ -37,6 +37,9 @@ cd dawi-vet-microservicios
 ## 2. Ejecutar el backend
 
 Los servicios se levantan **uno por uno, en este orden**. Espera a que cada uno termine de arrancar (mensaje `Started ... in x seconds`) antes de iniciar el siguiente. En Spring Tools: clic derecho en el proyecto → **Run As → Spring Boot App**. La primera vez Maven descarga las dependencias y tarda unos minutos.
+
+Las URL JDBC usan `DB_HOST`, cuyo valor predeterminado es `localhost`. Por eso los
+servicios pueden ejecutarse directamente en Windows sin activar perfiles.
 
 ```
 MySQL encendido (puerto 3306)
@@ -73,24 +76,33 @@ Abrir http://localhost:8761 y verificar que los 8 clientes Eureka
 aparezcan registrados (tarda unos 30 segundos)
 ```
 
-Las bases de datos se crean solas al arrancar cada servicio.
+Las siete bases deben existir en MySQL80. Hibernate crea o actualiza sus tablas al
+arrancar cada servicio mediante `ddl-auto=update`.
 
 ## 3. Datos iniciales
 
-Después del primer arranque, crear los roles en MySQL. Los `INSERT` son
-idempotentes y no dependen de IDs concretos:
+Al arrancar, `auth-service` comprueba por nombre los roles `ADMIN`, `VETERINARIO`
+y `RECEPCIONISTA`, y crea únicamente los que falten. Los IDs son generados por
+JPA/MySQL. El proceso es idempotente y no modifica roles existentes, por lo que ya
+no se requieren `INSERT` manuales para inicializar este catálogo.
 
-```sql
-USE auth_db;
-INSERT INTO roles (nombre)
-SELECT 'ADMIN' WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'ADMIN');
-INSERT INTO roles (nombre)
-SELECT 'RECEPCIONISTA' WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'RECEPCIONISTA');
-INSERT INTO roles (nombre)
-SELECT 'VETERINARIO' WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'VETERINARIO');
-```
+### Administrador automático para desarrollo
 
-### Crear el primer administrador
+`auth-service` crea automáticamente la cuenta ADMIN académica al arrancar. El correo
+y la contraseña predeterminados están en `application.properties` y pueden
+sobrescribirse mediante `DAWIVET_ADMIN_EMAIL` y `DAWIVET_ADMIN_PASSWORD`. No se
+requiere activar ningún perfil.
+
+Hibernate mantiene `spring.jpa.hibernate.ddl-auto=update`: crea las tablas antes de
+ejecutar el inicializador si todavía no existen. Después, el inicializador crea el
+rol `ADMIN` si falta y busca el correo normalizado. Una cuenta existente nunca se
+sobrescribe; si pertenece a otro rol, se informa el conflicto en el log sin cambiar
+sus permisos. La contraseña se codifica con BCrypt y nunca se escribe en logs.
+
+La contraseña corta de pruebas es una excepción exclusiva de este inicializador.
+El registro y la edición HTTP siguen exigiendo un mínimo de 12 caracteres.
+
+### Aprovisionamiento administrativo seguro
 
 El registro HTTP requiere un JWT de ADMIN y no sirve para crear la primera cuenta.
 El bootstrap es un comando de una sola ejecución: no abre endpoints, está
@@ -101,7 +113,6 @@ Requisitos previos:
 
 - `.env` configurado según la sección **Ejecución con Docker**;
 - MySQL y `auth-service` iniciados al menos una vez para crear las tablas;
-- rol `ADMIN` creado con el SQL anterior;
 - imagen actualizada: `docker compose build auth-service`.
 
 Desde PowerShell, en la raíz del repositorio, ejecuta lo siguiente. La contraseña
@@ -169,6 +180,11 @@ Iniciar sesión con `POST http://localhost:8080/api/auth/login`:
 Una respuesta `200` con un `token` confirma que la cuenta quedó operativa. En
 Postman, para las demás peticiones usa **Authorization → Bearer Token**. El token
 dura 24 horas. No copies la contraseña al README, `.env` ni scripts versionados.
+
+El administrador automático se prueba del mismo modo. En Angular, inicia el frontend
+con `npm start`, abre `http://localhost:4200/login` e introduce sus credenciales. El
+frontend apunta al Gateway en `http://localhost:8080/api` y redirige el rol ADMIN a
+su panel.
 
 ## 4. Guía de las APIs
 
@@ -287,17 +303,18 @@ git push
 
 ## Ejecución con Docker
 
-La configuración Docker convive con la ejecución local. Los archivos
-`application.properties` continúan usando `localhost` para Spring Tools; Compose activa
-el perfil `docker`, que utiliza `mysql:3306` y
-`http://eureka-server:8761/eureka`.
+Cada servicio utiliza un único `application.properties`. En Windows se aplican los
+valores predeterminados `localhost`; Compose suministra `DB_HOST` con
+`host.docker.internal` y `EUREKA_URL` con la dirección interna de Eureka. No se
+utilizan perfiles Spring.
 
 ### Requisitos previos
 
 - Docker Desktop con contenedores Linux.
 - Docker Compose v2 (incluido en Docker Desktop).
+- MySQL80 instalado y ejecutándose en Windows en el puerto `3306`.
 - Al menos 4 GB de memoria disponibles para Docker.
-- Puertos libres en Windows: `8080`, `8761` y `3307`.
+- Puertos libres en Windows para Docker: `8080` y `8761`.
 
 En Docker Desktop, comprueba que el motor esté iniciado. Si trabajas desde WSL,
 habilita **Settings → Resources → WSL Integration** para la distribución utilizada.
@@ -314,8 +331,18 @@ notepad .env
 
 Reemplaza todos los valores `CHANGE_ME`. `.env` está ignorado por Git y no debe
 subirse. Las contraseñas MySQL admiten letras, números, punto, guion y guion bajo.
+Cada contraseña debe coincidir con la del usuario `dawivet_*` correspondiente en
+MySQL80.
 `JWT_SECRET` debe tener al menos 32 caracteres y es compartido por todos los
 servicios.
+
+Para sobrescribir opcionalmente las credenciales del administrador académico, agrega
+a tu `.env` local:
+
+```dotenv
+DAWIVET_ADMIN_EMAIL=<correo de desarrollo>
+DAWIVET_ADMIN_PASSWORD=<contraseña de desarrollo>
+```
 
 Validar la configuración antes de construir:
 
@@ -330,9 +357,10 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Compose inicia, en orden saludable, MySQL, Eureka, los siete servicios de negocio y
-el Gateway. Los Dockerfile compilan cada JAR dentro de una imagen Maven Java 17; no
-usan los JAR generados por Eclipse.
+Compose inicia nueve contenedores Java: Eureka, los siete servicios de negocio y el
+Gateway. MySQL80 permanece como servicio independiente de Windows. Los Dockerfile
+compilan cada JAR dentro de una imagen Maven Java 17; no usan los JAR generados por
+Eclipse.
 
 Comprobar logs:
 
@@ -345,7 +373,7 @@ Accesos desde Windows:
 
 - Eureka: http://localhost:8761
 - API Gateway: http://localhost:8080
-- MySQL Workbench: host `127.0.0.1`, puerto `3307`.
+- MySQL Workbench: host `127.0.0.1`, puerto `3306`.
 
 Los puertos 8081–8087 no se publican. Las peticiones Postman deben entrar por el
 Gateway. MySQL usa usuarios separados: `dawivet_auth`, `dawivet_clientes`,
@@ -353,24 +381,24 @@ Gateway. MySQL usa usuarios separados: `dawivet_auth`, `dawivet_clientes`,
 `dawivet_consultas` y `dawivet_vacunas`; cada uno sólo tiene permisos sobre su
 base. Usa en Workbench la contraseña correspondiente de `.env`.
 
-En un volumen nuevo se crean automáticamente `auth_db`, `clientes_db`,
-`veterinarios_db`, `mascotas_db`, `citas_db`, `consultas_db` y
-`vacunas_db`. Hibernate conserva `ddl-auto=update` y crea/actualiza las tablas al
-arrancar cada servicio.
+En MySQL80 deben existir `auth_db`, `clientes_db`, `veterinarios_db`, `mascotas_db`,
+`citas_db`, `consultas_db` y `vacunas_db`, junto con sus usuarios limitados a cada
+base. Las bases conviven con las de otros proyectos del servidor Windows. Hibernate
+conserva `ddl-auto=update` y crea/actualiza las tablas al arrancar cada servicio.
 
-Los roles iniciales de `auth_db` y la primera cuenta administradora se crean con el
-procedimiento de la sección **Datos iniciales** después del primer arranque.
+Los tres roles estándar de `auth_db` se inicializan automáticamente. En desarrollo,
+la cuenta ADMIN de pruebas también puede crearse con el procedimiento de la sección
+**Datos iniciales**.
 
 ### Operación habitual
 
-Apagar sin borrar datos:
+Apagar los contenedores Java:
 
 ```powershell
 docker compose down
 ```
 
-El volumen `dawi-vet-mysql-data` se conserva. No uses `docker compose down -v`
-salvo que quieras eliminar deliberadamente todas las bases.
+Este comando no detiene MySQL80 ni modifica sus bases de datos.
 
 Reiniciar un servicio:
 
@@ -395,25 +423,13 @@ docker compose logs --tail=100 api-gateway
 
 | Spring Tools/local | Docker Compose |
 |---|---|
-| Perfil predeterminado | Perfil `docker` |
-| MySQL en `localhost:3306` | MySQL interno en `mysql:3306` |
+| Sin perfil Spring | Sin perfil Spring |
+| MySQL en `localhost:3306` | MySQL80 en `host.docker.internal:3306` |
 | Eureka en `localhost:8761` | Eureka interno en `eureka-server:8761` |
-| Servicios iniciados manualmente | Compose inicia los diez contenedores |
+| Servicios iniciados manualmente | Compose inicia nueve contenedores Java |
 | Clave JWT de configuración local | `JWT_SECRET` de `.env` |
 
 No ejecutes simultáneamente los servicios locales en los puertos 8080/8761 y sus
 equivalentes Docker publicados. Compose no finaliza procesos ajenos si un puerto está
 ocupado.
-
-### Volúmenes ya existentes
-
-Los scripts de `docker/mysql/init` sólo se ejecutan cuando el directorio de datos de
-MySQL está vacío. Si `dawi-vet-mysql-data` ya existe:
-
-- los datos y tablas se conservan;
-- no se vuelven a crear usuarios ni se cambian sus contraseñas;
-- conserva las contraseñas originales de ese volumen en `.env`, o actualízalas
-  manualmente como administrador MySQL.
-
-No es necesario ni recomendable eliminar el volumen para reiniciar el proyecto.
 
