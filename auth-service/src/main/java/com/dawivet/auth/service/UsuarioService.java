@@ -122,10 +122,10 @@ public class UsuarioService {
     }
 
     private void validarNuevaClave(String clave) {
-        if (clave == null || clave.isBlank() || clave.length() < 12
+        if (clave == null || clave.isBlank() || clave.length() < 8
                 || clave.getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "La contraseña debe tener al menos 12 caracteres y no superar 72 bytes");
+                    "La contraseña debe tener al menos 8 caracteres y no superar 72 bytes");
         }
     }
 

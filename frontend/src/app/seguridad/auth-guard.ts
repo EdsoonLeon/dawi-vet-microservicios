@@ -11,7 +11,7 @@ export const authGuard: CanActivateFn = (route) => {
 
   const usuario = authService.obtenerUsuario();
 
-  if (!usuario) {
+  if (!usuario || !authService.obtenerToken()) {
     router.navigateByUrl('/login');
     return false;
   }
@@ -21,6 +21,15 @@ export const authGuard: CanActivateFn = (route) => {
     router.navigateByUrl('/login');
     return false;
   }
+
+  if (!usuario.activo) {
+    authService.cerrarSesion();
+    router.navigateByUrl('/login');
+    return false;
+  }
+
+  // /api/usuarios/{id} está restringido a ADMIN en el backend.
+  if (usuario.rol.nombre !== 'ADMIN') return true;
 
   return usuarioService.verificarActivo(usuario.id).pipe(
     map(activo => {

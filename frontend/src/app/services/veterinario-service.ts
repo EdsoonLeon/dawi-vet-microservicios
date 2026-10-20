@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { Veterinario } from '../models/veterinario';
+import { Veterinario, VeterinarioActualizacionRequest, VeterinarioRegistroRequest } from '../models/veterinario';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -19,15 +19,15 @@ export class VeterinarioService {
     return this.http.get<Veterinario>(`${this.urlBase}/${id}`);
   }
 
-  registrarVeterinario(datos: any): Observable<Veterinario> {
+  registrarVeterinario(datos: VeterinarioRegistroRequest): Observable<Veterinario> {
     return this.http.post<Veterinario>(`${this.urlBase}/registrar`, datos);
   }
 
-  editarVeterinario(id: number, datos: any): Observable<Veterinario> {
+  editarVeterinario(id: number, datos: VeterinarioActualizacionRequest): Observable<Veterinario> {
     return this.http.put<Veterinario>(`${this.urlBase}/${id}`, datos);
   }
 
-  eliminarVeterinario(id: number): Observable<any> {
+  eliminarVeterinario(id: number): Observable<string> {
     return this.http.delete(`${this.urlBase}/${id}`, { responseType: 'text' });
   }
 

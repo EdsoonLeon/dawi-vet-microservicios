@@ -2,10 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 const MENSAJES_HTTP: Record<number, string> = {
   0: 'No se pudo conectar con el servidor. Inténtalo nuevamente.',
+  400: 'Revisa los datos enviados e inténtalo nuevamente.',
   401: 'La sesión no es válida o las credenciales son incorrectas.',
   403: 'No tienes permisos para realizar esta operación.',
   404: 'No se encontró el recurso solicitado.',
   409: 'El registro entra en conflicto con datos existentes.',
+  422: 'La operación no cumple las reglas del negocio.',
   500: 'Ocurrió un error interno. Inténtalo nuevamente.'
 };
 

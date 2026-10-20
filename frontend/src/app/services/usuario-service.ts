@@ -1,12 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable ,map} from 'rxjs';
-import { Usuario } from '../models/usuario';
+import { Observable, map } from 'rxjs';
+import { Usuario, UsuarioActualizacionRequest } from '../models/usuario';
 import { environment } from '../../environments/environment';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UsuarioService {
   private http = inject(HttpClient);
@@ -20,11 +19,11 @@ export class UsuarioService {
     return this.http.get<Usuario>(`${this.urlBase}/${id}`);
   }
 
-  editarUsuario(id: number, usuario: any): Observable<Usuario> {
+  editarUsuario(id: number, usuario: UsuarioActualizacionRequest): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.urlBase}/${id}`, usuario);
   }
 
-  eliminarUsuario(id: number): Observable<any> {
+  eliminarUsuario(id: number): Observable<string> {
     return this.http.delete(`${this.urlBase}/${id}`, { responseType: 'text' });
   }
 
@@ -33,8 +32,6 @@ export class UsuarioService {
   }
 
   verificarActivo(id: number): Observable<boolean> {
-  return this.obtenerPorId(id).pipe(
-    map(usuario => usuario.activo)
-  );
-}
+    return this.obtenerPorId(id).pipe(map((usuario) => usuario.activo));
+  }
 }

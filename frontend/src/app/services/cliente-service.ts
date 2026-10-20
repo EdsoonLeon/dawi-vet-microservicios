@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Cliente } from '../models/cliente';
+import { Cliente, ClienteRequest } from '../models/cliente';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -11,7 +11,7 @@ export class ClienteService {
   private http = inject(HttpClient);
   private readonly urlBase = `${environment.apiUrl}/clientes`;
 
-  registrarCliente(cliente: Cliente): Observable<Cliente> {
+  registrarCliente(cliente: ClienteRequest): Observable<Cliente> {
     return this.http.post<Cliente>(`${this.urlBase}/registrar`, cliente);
   }
 
@@ -23,11 +23,11 @@ export class ClienteService {
     return this.http.get<Cliente>(`${this.urlBase}/${id}`);
   }
 
-  editarCliente(id: number, cliente: Cliente): Observable<Cliente> {
+  editarCliente(id: number, cliente: ClienteRequest): Observable<Cliente> {
     return this.http.put<Cliente>(`${this.urlBase}/${id}`, cliente);
   }
 
-  eliminarCliente(id: number): Observable<any> {
+  eliminarCliente(id: number): Observable<string> {
     return this.http.delete(`${this.urlBase}/${id}`, { responseType: 'text' });
   }
 

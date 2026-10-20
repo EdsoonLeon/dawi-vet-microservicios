@@ -9,6 +9,7 @@ import { Recepcionista } from './pages/recepcionista/recepcionista';
 import { Clientes } from './pages/shared/clientes/clientes';
 import { Mascotas } from './pages/shared/mascotas/mascotas';
 import { Citas } from './pages/shared/citas/citas';
+import { Vacunas } from './pages/shared/vacunas/vacunas';
 import { authGuard } from './seguridad/auth-guard';
 
 export const routes: Routes = [
@@ -25,6 +26,7 @@ export const routes: Routes = [
       { path: 'clientes', component: Clientes },
       { path: 'mascotas', component: Mascotas },
       { path: 'citas', component: Citas },
+      { path: 'vacunas', component: Vacunas },
     ]
   },
   {
@@ -36,6 +38,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'agenda', pathMatch: 'full' },
       { path: 'agenda', component: Agenda },
       { path: 'consultas', component: Consultas },
+      { path: 'vacunas', component: Vacunas },
     ]
   },
   {
@@ -48,6 +51,7 @@ export const routes: Routes = [
       { path: 'clientes', component: Clientes },
       { path: 'mascotas', component: Mascotas },
       { path: 'citas', component: Citas },
+      { path: 'vacunas', component: Vacunas },
     ]
   },
 ];

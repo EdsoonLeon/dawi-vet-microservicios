@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Cita } from '../models/cita';
+import { Cita, CitaActualizacionRequest, CitaRegistroRequest } from '../models/cita';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -11,7 +11,7 @@ export class CitaService {
   private http = inject(HttpClient);
   private readonly urlBase = `${environment.apiUrl}/citas`;
 
-  registrarCita(cita: any): Observable<Cita> {
+  registrarCita(cita: CitaRegistroRequest): Observable<Cita> {
     return this.http.post<Cita>(`${this.urlBase}/registrar`, cita);
   }
 
@@ -31,7 +31,7 @@ export class CitaService {
     return this.http.get<Cita>(`${this.urlBase}/${id}`);
   }
 
-  editarCita(id: number, cita: any): Observable<Cita> {
+  editarCita(id: number, cita: CitaActualizacionRequest): Observable<Cita> {
     return this.http.put<Cita>(`${this.urlBase}/${id}`, cita);
   }
 
@@ -39,7 +39,7 @@ export class CitaService {
     return this.http.patch<Cita>(`${this.urlBase}/${id}/estado`, { estado });
   }
 
-  cancelarCita(id: number): Observable<any> {
+  cancelarCita(id: number): Observable<string> {
     return this.http.delete(`${this.urlBase}/${id}`, { responseType: 'text' });
   }
 }

@@ -38,10 +38,10 @@ export class Mascotas implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(m =>
-      m.nombre.toLowerCase().includes(termino) ||
-      m.especie.toLowerCase().includes(termino) ||
-      m.raza.toLowerCase().includes(termino) ||
-      m.clienteNombre.toLowerCase().includes(termino)
+      (m.nombre ?? '').toLowerCase().includes(termino) ||
+      (m.especie ?? '').toLowerCase().includes(termino) ||
+      (m.raza ?? '').toLowerCase().includes(termino) ||
+      (m.clienteNombre ?? '').toLowerCase().includes(termino)
     );
   });
 

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Mascota } from '../models/mascota';
+import { Mascota, MascotaActualizacionRequest, MascotaRegistroRequest } from '../models/mascota';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -11,7 +11,7 @@ export class MascotaService {
   private http = inject(HttpClient);
   private readonly urlBase = `${environment.apiUrl}/mascotas`;
 
-  registrarMascota(mascota: any): Observable<Mascota> {
+  registrarMascota(mascota: MascotaRegistroRequest): Observable<Mascota> {
     return this.http.post<Mascota>(`${this.urlBase}/registrar`, mascota);
   }
 
@@ -27,11 +27,11 @@ export class MascotaService {
     return this.http.get<Mascota>(`${this.urlBase}/${id}`);
   }
 
-  editarMascota(id: number, mascota: any): Observable<Mascota> {
+  editarMascota(id: number, mascota: MascotaActualizacionRequest): Observable<Mascota> {
     return this.http.put<Mascota>(`${this.urlBase}/${id}`, mascota);
   }
 
-  eliminarMascota(id: number): Observable<any> {
+  eliminarMascota(id: number): Observable<string> {
     return this.http.delete(`${this.urlBase}/${id}`, { responseType: 'text' });
   }
 

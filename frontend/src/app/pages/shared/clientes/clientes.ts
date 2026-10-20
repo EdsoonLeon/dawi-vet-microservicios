@@ -41,10 +41,10 @@ export class Clientes implements OnInit {
     if (!termino) return this.clientes;
 
     return this.clientes.filter(c =>
-      c.nombre.toLowerCase().includes(termino) ||
-      c.apellido.toLowerCase().includes(termino) ||
-      c.correo.toLowerCase().includes(termino) ||
-      c.telefono.includes(termino)
+      (c.nombre ?? '').toLowerCase().includes(termino) ||
+      (c.apellido ?? '').toLowerCase().includes(termino) ||
+      (c.correo ?? '').toLowerCase().includes(termino) ||
+      (c.telefono ?? '').includes(termino)
     );
   }
 

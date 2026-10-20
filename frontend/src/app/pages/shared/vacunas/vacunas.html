@@ -1,0 +1,177 @@
+<div class="space-y-lg">
+  <div class="flex items-center justify-between gap-md">
+    <div>
+      <h1 class="text-headline-lg text-on-surface">Vacunas</h1>
+      <p class="text-body-sm text-on-surface-variant">Consulta el catálogo de vacunas y su disponibilidad</p>
+    </div>
+    @if (esAdmin) {
+      <button type="button" (click)="abrirNuevo()" [disabled]="cargando"
+              class="bg-primary text-on-primary text-label-md px-md py-sm rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-xs disabled:opacity-50">
+        <span class="material-symbols-outlined text-lg">add</span>
+        Nueva vacuna
+      </button>
+    }
+  </div>
+
+  <div class="flex flex-col md:flex-row gap-sm">
+    <form (ngSubmit)="aplicarFiltros()" class="flex flex-1 gap-sm">
+      <div class="relative flex-1">
+        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+        <input [(ngModel)]="busquedaNombre" name="busquedaNombre" type="text" placeholder="Buscar vacuna por nombre..."
+               class="w-full h-11 pl-12 pr-4 bg-surface rounded-full text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+      </div>
+      <button type="submit" [disabled]="cargando"
+              class="bg-primary text-on-primary text-label-md px-md py-sm rounded-full disabled:opacity-50">Buscar</button>
+    </form>
+    <select [ngModel]="estadoFiltro" (ngModelChange)="estadoFiltro = $event; aplicarFiltros()" [disabled]="cargando"
+            aria-label="Filtrar por estado"
+            class="h-11 px-md bg-surface rounded-full text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+      <option value="todas">Todas</option>
+      <option value="true">Activas</option>
+      <option value="false">Inactivas</option>
+    </select>
+  </div>
+
+  @if (mensajeError && !mostrarFormulario) {
+    <p role="alert" class="text-label-sm text-error">{{ mensajeError }}</p>
+  }
+  @if (mensajeExito) {
+    <p role="status" class="text-label-sm text-primary">{{ mensajeExito }}</p>
+  }
+
+  <div class="bg-surface-container-lowest rounded-2xl shadow-sm overflow-x-auto">
+    <table class="w-full text-left">
+      <thead>
+        <tr class="border-b border-outline-variant/30">
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Nombre</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Descripción</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Enfermedad que previene</th>
+          <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm">Estado</th>
+          @if (esAdmin) {
+            <th class="text-label-sm text-on-surface-variant uppercase tracking-wider px-md py-sm text-right">Acciones</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr><td [attr.colspan]="esAdmin ? 5 : 4" class="px-md py-lg text-center text-body-sm text-on-surface-variant">Cargando vacunas...</td></tr>
+        } @else {
+          @for (vacuna of vacunas; track vacuna.id) {
+            <tr class="border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors">
+              <td class="px-md py-sm text-body-sm text-on-surface">{{ vacuna.nombre }}</td>
+              <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ vacuna.descripcion || '—' }}</td>
+              <td class="px-md py-sm text-body-sm text-on-surface-variant">{{ vacuna.enfermedadPreviene }}</td>
+              <td class="px-md py-sm">
+                @if (vacuna.activo) {
+                  <span class="text-label-sm bg-primary/15 text-primary px-sm py-xs rounded-full">Activa</span>
+                } @else {
+                  <span class="text-label-sm bg-on-surface-variant/10 text-on-surface-variant px-sm py-xs rounded-full">Inactiva</span>
+                }
+              </td>
+              @if (esAdmin) {
+                <td class="px-md py-sm text-right space-x-xs">
+                  <button type="button" (click)="abrirEditar(vacuna)" [disabled]="procesandoId !== null"
+                          class="p-xs text-on-surface-variant hover:text-primary transition-colors disabled:opacity-50" title="Editar vacuna" [attr.aria-label]="'Editar ' + vacuna.nombre">
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                  </button>
+                  @if (vacuna.activo) {
+                    <button type="button" (click)="pedirDesactivar(vacuna)" [disabled]="procesandoId !== null"
+                            class="p-xs text-on-surface-variant hover:text-error transition-colors disabled:opacity-50" title="Desactivar vacuna" [attr.aria-label]="'Desactivar ' + vacuna.nombre">
+                      <span class="material-symbols-outlined text-lg">visibility_off</span>
+                    </button>
+                  } @else {
+                    <button type="button" (click)="activar(vacuna)" [disabled]="procesandoId !== null"
+                            class="p-xs text-on-surface-variant hover:text-primary transition-colors disabled:opacity-50" title="Activar vacuna" [attr.aria-label]="'Activar ' + vacuna.nombre">
+                      <span class="material-symbols-outlined text-lg">visibility</span>
+                    </button>
+                  }
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr><td [attr.colspan]="esAdmin ? 5 : 4" class="px-md py-lg text-center text-body-sm text-on-surface-variant">No se encontraron vacunas con estos filtros.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-sm text-body-sm text-on-surface-variant">
+    <span>{{ totalElementos }} vacuna{{ totalElementos === 1 ? '' : 's' }} · Página {{ pagina + 1 }} de {{ totalPaginas || 1 }}</span>
+    <div class="flex items-center gap-sm">
+      <label for="tamanoPagina" class="text-label-sm">Por página</label>
+      <select id="tamanoPagina" [ngModel]="size" (ngModelChange)="cambiarTamano($event)" [disabled]="cargando"
+              class="h-9 px-sm bg-surface rounded-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50">
+        <option [ngValue]="5">5</option>
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="20">20</option>
+      </select>
+      <button type="button" (click)="cambiarPagina(pagina - 1)" [disabled]="cargando || pagina === 0"
+              class="px-md py-sm rounded-full hover:bg-surface-container-high disabled:opacity-50">Anterior</button>
+      <button type="button" (click)="cambiarPagina(pagina + 1)" [disabled]="cargando || pagina + 1 >= totalPaginas"
+              class="px-md py-sm rounded-full hover:bg-surface-container-high disabled:opacity-50">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+@if (mostrarFormulario && esAdmin) {
+  <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" (click)="cerrarFormulario()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-lg max-w-[36rem] w-full space-y-md max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between">
+        <h2 class="text-headline-sm text-on-surface">{{ vacunaEditandoId === null ? 'Nueva vacuna' : 'Editar vacuna' }}</h2>
+        <button type="button" (click)="cerrarFormulario()" [disabled]="guardando"
+                class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all disabled:opacity-50" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (mensajeError) {
+        <p role="alert" class="text-label-sm text-error">{{ mensajeError }}</p>
+      }
+
+      <form [formGroup]="vacunaForm" (ngSubmit)="guardar()" class="space-y-md">
+        <div class="space-y-1.5">
+          <label for="vacunaNombre" class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Nombre</label>
+          <input id="vacunaNombre" formControlName="nombre" type="text" maxlength="120" required
+                 class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (vacunaForm.controls.nombre.invalid && vacunaForm.controls.nombre.touched) {
+            <p class="text-label-sm text-error">Ingresa un nombre de hasta 120 caracteres.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label for="vacunaDescripcion" class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Descripción</label>
+          <textarea id="vacunaDescripcion" formControlName="descripcion" rows="3" maxlength="500"
+                    class="w-full px-md py-sm bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+          @if (vacunaForm.controls.descripcion.invalid && vacunaForm.controls.descripcion.touched) {
+            <p class="text-label-sm text-error">La descripción no puede superar 500 caracteres.</p>
+          }
+        </div>
+        <div class="space-y-1.5">
+          <label for="vacunaEnfermedad" class="text-label-sm text-on-surface-variant uppercase tracking-wider block">Enfermedad que previene</label>
+          <input id="vacunaEnfermedad" formControlName="enfermedadPreviene" type="text" maxlength="200" required
+                 class="w-full h-11 px-md bg-surface rounded-lg text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary" />
+          @if (vacunaForm.controls.enfermedadPreviene.invalid && vacunaForm.controls.enfermedadPreviene.touched) {
+            <p class="text-label-sm text-error">Ingresa la enfermedad que previene (máximo 200 caracteres).</p>
+          }
+        </div>
+        <div class="flex gap-sm justify-end pt-sm">
+          <button type="button" (click)="cerrarFormulario()" [disabled]="guardando"
+                  class="px-md py-sm rounded-full text-label-md text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50">Cancelar</button>
+          <button type="submit" [disabled]="guardando"
+                  class="bg-primary text-on-primary px-lg py-sm rounded-full text-label-md shadow-sm hover:shadow-md transition-all disabled:opacity-50">
+            {{ guardando ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<app-confirm-modal
+  [visible]="vacunaADesactivar !== null"
+  titulo="Desactivar vacuna"
+  [mensaje]="'¿Seguro que quieres desactivar ' + (vacunaADesactivar?.nombre ?? 'esta vacuna') + '? Podrás reactivarla después.'"
+  textoConfirmar="Desactivar"
+  (confirmado)="confirmarDesactivacion()"
+  (cancelado)="cancelarDesactivacion()"
+/>

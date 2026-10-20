@@ -42,8 +42,8 @@ export class Citas implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascotaNombre.toLowerCase().includes(termino) ||
-      c.veterinarioNombre.toLowerCase().includes(termino) ||
+      (c.mascotaNombre ?? '').toLowerCase().includes(termino) ||
+      (c.veterinarioNombre ?? '').toLowerCase().includes(termino) ||
       c.estado.toLowerCase().includes(termino)
     );
   });
@@ -96,7 +96,7 @@ export class Citas implements OnInit {
     this.citaEditandoId = cita.id;
     this.citaForm.setValue({
       fecha: cita.fecha,
-      hora: cita.hora.slice(0, 5),
+      hora: cita.hora?.slice(0, 5) ?? '',
       mascotaId: String(cita.mascotaId),
       veterinarioId: String(cita.veterinarioId),
     });

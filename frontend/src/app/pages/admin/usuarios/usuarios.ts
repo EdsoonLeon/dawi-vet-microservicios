@@ -4,7 +4,7 @@ import { UsuarioService } from '../../../services/usuario-service';
 import { UsuarioAuthService } from '../../../services/usuario-auth-service';
 import { RolService } from '../../../services/rol-service';
 import { VeterinarioService } from '../../../services/veterinario-service';
-import { Usuario } from '../../../models/usuario';
+import { Usuario, UsuarioActualizacionRequest } from '../../../models/usuario';
 import { Rol } from '../../../models/rol';
 import { ConfirmModal } from '../../../components/confirm-modal/confirm-modal';
 import { mensajeDeError } from '../../../shared/http-error.util';
@@ -43,8 +43,8 @@ export class Usuarios implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(u =>
-      u.nombre.toLowerCase().includes(termino) ||
-      u.apellido.toLowerCase().includes(termino) ||
+      (u.nombre ?? '').toLowerCase().includes(termino) ||
+      (u.apellido ?? '').toLowerCase().includes(termino) ||
       u.correo.toLowerCase().includes(termino) ||
       u.rol.nombre.toLowerCase().includes(termino)
     );
@@ -170,7 +170,7 @@ export class Usuarios implements OnInit {
       return;
     }
 
-    const valores = this.usuarioForm.value;
+    const valores = this.usuarioForm.getRawValue();
     const esVeterinario = this.rolVeterinarioSeleccionado;
 
     if (this.usuarioEditandoId) {
@@ -179,7 +179,7 @@ export class Usuarios implements OnInit {
         return;
       }
 
-      const datosEdicion: any = {
+      const datosEdicion: UsuarioActualizacionRequest = {
         nombre: valores.nombre,
         apellido: valores.apellido,
         correo: valores.correo,
@@ -226,8 +226,8 @@ export class Usuarios implements OnInit {
         usuario: {
           nombre: valores.nombre,
           apellido: valores.apellido,
-          correo: valores.correo,
-          clave: valores.clave,
+          correo: valores.correo ?? '',
+          clave: valores.clave ?? '',
         }
       };
 
@@ -245,8 +245,8 @@ export class Usuarios implements OnInit {
     const datosRegistro = {
       nombre: valores.nombre,
       apellido: valores.apellido,
-      correo: valores.correo,
-      clave: valores.clave,
+      correo: valores.correo ?? '',
+      clave: valores.clave ?? '',
       rol: { id: Number(valores.rolId) },
     };
     this.usuarioAuthService.registrarUsuario(datosRegistro).subscribe({

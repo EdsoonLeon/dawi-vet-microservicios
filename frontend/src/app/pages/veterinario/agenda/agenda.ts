@@ -39,7 +39,7 @@ export class Agenda implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascotaNombre.toLowerCase().includes(termino) ||
+      (c.mascotaNombre ?? '').toLowerCase().includes(termino) ||
       this.duenoDe(c.mascotaId).toLowerCase().includes(termino) ||
       c.estado.toLowerCase().includes(termino)
     );

@@ -17,7 +17,7 @@ export class Recepcionista {
 
   get iniciales(): string {
     if (!this.usuario) return '';
-    return (this.usuario.nombre[0] ?? '') + (this.usuario.apellido[0] ?? '');
+    return (this.usuario.nombre?.[0] ?? '') + (this.usuario.apellido?.[0] ?? '');
   }
 
   cerrarSesion() {

@@ -82,8 +82,8 @@ public class AdminBootstrap implements ApplicationRunner {
         String clave = leerClave(requerido("dawivet.bootstrap.admin.password-file"));
 
         validarCorreo(correo);
-        if (clave.length() < 12 || clave.isBlank()) {
-            throw new IllegalArgumentException("La contraseña inicial debe tener al menos 12 caracteres");
+        if (clave.length() < 8 || clave.isBlank()) {
+            throw new IllegalArgumentException("La contraseña inicial debe tener al menos 8 caracteres");
         }
         if (usuarioRepository.findByCorreoIgnoreCase(correo).isPresent()) {
             throw new IllegalStateException("El correo indicado ya pertenece a otra cuenta");

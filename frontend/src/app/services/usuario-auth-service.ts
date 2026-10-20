@@ -8,19 +8,11 @@ import { Observable, map, tap } from 'rxjs';
 // Observable: tipo de dato para respuestas asíncronas
 // tap: ejecuta una acción sin modificar la respuesta
 
-import { Usuario } from '../models/usuario';
+import { Usuario, UsuarioRegistroRequest } from '../models/usuario';
 // Interfaz que describe la forma del usuario que devuelve la API
 import { environment } from '../../environments/environment';
 
-// ---------------------------------------------------------------------------
-// SUPUESTO sobre la forma de la respuesta de POST /api/auth/login.
-// El contrato solo dice "devuelve token (y datos del usuario)", sin detallar
-// la forma exacta. Se asume que el backend responde:
-//   { token: string, usuario: { id, nombre, apellido, correo, rol: {id, nombre}, activo } }
-// Si el backend devuelve los datos del usuario "planos" junto al token
-// (sin el wrapper "usuario"), este es el ÚNICO lugar que hay que ajustar:
-// la interfaz LoginResponse y la función mapearRespuestaLogin() de abajo.
-// ---------------------------------------------------------------------------
+// Contrato real de POST /api/auth/login: { token, usuario }.
 interface LoginResponse {
   token: string;
   usuario: Usuario;
@@ -58,7 +50,7 @@ export class UsuarioAuthService {
     localStorage.setItem('usuario', JSON.stringify(usuario));
   }
 
-  registrarUsuario(datos: any): Observable<Usuario> {
+  registrarUsuario(datos: UsuarioRegistroRequest): Observable<Usuario> {
     return this.http.post<Usuario>(`${this.urlBase}/registrar`, datos);
   }
 

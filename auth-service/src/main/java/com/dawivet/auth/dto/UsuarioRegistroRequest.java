@@ -21,7 +21,7 @@ public record UsuarioRegistroRequest(
         @Size(max = 255, message = "El correo no puede superar 255 caracteres")
         String correo,
         @NotBlank(message = "La contraseña es obligatoria")
-        @Size(min = 12, message = "La contraseña debe tener al menos 12 caracteres")
+        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         String clave,
         @NotNull(message = "El rol es obligatorio")
         @Valid

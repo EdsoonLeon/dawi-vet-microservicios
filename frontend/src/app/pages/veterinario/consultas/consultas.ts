@@ -43,9 +43,9 @@ export class Consultas implements OnInit {
     if (!termino) return lista;
 
     return lista.filter(c =>
-      c.mascotaNombre.toLowerCase().includes(termino) ||
-      c.diagnostico.toLowerCase().includes(termino) ||
-      c.tratamiento.toLowerCase().includes(termino)
+      (c.mascotaNombre ?? '').toLowerCase().includes(termino) ||
+      (c.diagnostico ?? '').toLowerCase().includes(termino) ||
+      (c.tratamiento ?? '').toLowerCase().includes(termino)
     );
   });
 
